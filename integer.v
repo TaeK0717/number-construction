@@ -207,7 +207,7 @@ Proof. destruct x. remember (beq_nat n n0) as b. destruct b.
 
     Close Scope integer_scope.
 
-    apply N_trichotomy in Heqb.
+    apply N_trichotomy_diff in Heqb.
     assert (forall q r: nat, q - r <> 0 /\ q * n1 + r * n2 = q * n2 + r * n1 -> n1 = n2).
     { intros. destruct H0.
       assert (q * n1 - r * n1 = q * n2 - r * n2). { omega. }
@@ -218,8 +218,8 @@ Proof. destruct x. remember (beq_nat n n0) as b. destruct b.
       apply H2. apply H0.
     }
     destruct Heqb.
-    apply (H0 n n0). split. apply H1. apply H.
-    apply (H0 n0 n). split. apply H1. omega.
+    apply (H0 n n0). split. rewrite N_trichotomy_diff. left. omega. apply H.
+    apply (H0 n0 n). split. rewrite N_trichotomy_diff. left. omega. omega.
     Open Scope integer_scope.
 Qed.
 
@@ -282,6 +282,17 @@ Proof.
   apply Z_10_0.
 Qed.
 
+(** trichotomy *)
+Corollary Z_10_1: forall x y: integer, x <Z y \/ x =Z= y \/ x >Z y.
+Proof.
+  intros.
+  pose proof (Z_10 x y).
+  destruct H; destruct H.
+  - left. apply H.
+  - destruct H. destruct H0. right. left. apply H0.
+  - destruct H. destruct H0. right. right. apply H1.
+Qed.
+
 (** transitivity *)
 Theorem Z_11: forall x y z: integer, x <Z y /\ y <Z z -> x <Z z.
 Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt x z). rewrite <- (Z_neg_diff__lt y z).
@@ -317,11 +328,6 @@ Qed.
 (** Z is not a trivial ring *)
 Theorem Z_14: 0 <Z> 1.
 Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Qed.
-
-Definition pos_int: Set := {z : integer | z >=Z 1}.
-
-Definition make_pos_int (p: pos_int): integer := proj1_sig p.
-Definition make_nat_int (n: nat): integer := (n, 0).
 
 Lemma Z_not_not_equal: forall z w: integer, z =Z= w <-> ~ z <Z> w.
 Proof.
@@ -384,8 +390,5 @@ Proof.
     destruct H3. right. repeat rewrite (Z_6 d _). apply Z_13. auto.
     left. repeat rewrite (Z_6 d _). apply Z_13. auto.
 Qed.
-
-Lemma Z_pos_int_nonzero: forall p: pos_int, make_pos_int p <Z> Z0.
-Proof. destruct p. simpl. destruct x. unfold Z_le in z. unfold Z_eq. omega. Qed.
 
 Close Scope integer_scope.

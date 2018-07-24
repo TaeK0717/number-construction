@@ -17,13 +17,37 @@ Proof.
   - simpl. intros. omega.
 Qed.
 
-Lemma N_trichotomy: forall a b: nat, a <> b -> minus a b <> 0 \/ minus b a <> 0.
+Lemma N_eq_dec: forall a b: nat, a = b \/ a <> b.
+Proof.
+  intros. omega.
+Qed.
+
+Lemma N_trichotomy_diff: forall a b: nat, a <> b <-> a > b \/ a < b.
 Proof. induction a.
-  - intros. simpl. right. omega.
-  - destruct b. intros. left. omega. intros.
-    assert (forall c d: nat, c = d -> S c = S d) by (intros; omega).
-    assert (a <> b) by (unfold not; intros; apply H0 in H1; apply H in H1; inversion H1).
-    apply IHa in H1. destruct H1; [left | right]; omega.
+  intros. split. intros. right. destruct b. contradiction. omega.
+  intros. destruct H. inversion H. destruct b; omega.
+  intros. destruct b. split. intros. left. omega. intros. destruct H. easy. omega.
+  assert (S a <> S b <-> a <> b). omega.
+  assert (S a > S b <-> a > b). omega.
+  assert (S a < S b <-> a < b). omega.
+  rewrite H, H0, H1. apply IHa.
+Qed.
+
+Lemma N_trichotomy: forall a b: nat, a > b \/ a = b \/ a < b.
+Proof.
+  intros.
+  assert (a > b \/ a = b \/ a < b <-> a = b \/ (a > b \/ a < b)) by omega.
+  rewrite H; clear H.
+  rewrite <- N_trichotomy_diff.
+  apply N_eq_dec.
+Qed.
+
+Lemma N_nonzero_minus: forall a b: nat, a > b <-> a - b <> 0.
+Proof. intros. omega. Qed.
+
+Lemma N_trichotomy_diff_minus: forall a b: nat, a <> b -> a - b <> 0 \/ b - a <> 0.
+Proof.
+  intros. repeat rewrite <- N_nonzero_minus. apply N_trichotomy_diff. apply H.
 Qed.
 
 Lemma N_S_inj: forall k l: nat, S k = S l -> k = l.
@@ -94,4 +118,29 @@ Proof.
     apply N_lt_plus_cons. remember (S (S b) - a) as k.
     destruct k. contradiction.
     apply N_lt_mult_nonzero. destruct H. apply H2.
+Qed.
+
+Lemma N_leb_false: forall n m: nat, (n <=? m) = false <-> ~ (n <= m).
+Proof.
+  induction n;intro p;case p;simpl.
+  split; intro. easy. omega. 
+  intros; split; intro. discriminate. omega.
+  split; intro. omega. reflexivity.
+  intros; split; intro.
+  apply IHn in H.
+  omega.
+  rewrite IHn.
+  apply lt_not_le.
+  omega.
+Qed.
+
+Lemma N_leb_false_gt: forall n m: nat, (n <=? m) = false <-> n > m.
+Proof.
+  intros.
+  rewrite N_leb_false. omega.
+Qed.
+
+Lemma N_beq_false: forall n m: nat, (n =? m) = false <-> n <> m.
+Proof.
+  apply beq_nat_false_iff.
 Qed.
