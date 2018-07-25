@@ -1,0 +1,15 @@
+DIGEST 6ee3ebd0bfba07aea0ef7f545a5dcc4e
+Flogic
+prf 6:19 <> contrapositive
+R40:40 Coq.Init.Logic <> :type_scope:x_'->'_x not
+R47:52 Coq.Init.Logic <> :type_scope:x_'->'_x not
+R61:61 Coq.Init.Logic <> :type_scope:x_'->'_x not
+R55:58 Coq.Init.Logic <> :type_scope:x_'->'_x not
+R59:59 Coq.Init.Logic <> :type_scope:'~'_x not
+R60:60 logic <> P var
+R53:53 Coq.Init.Logic <> :type_scope:'~'_x not
+R54:54 logic <> Q var
+R42:45 Coq.Init.Logic <> :type_scope:x_'->'_x not
+R46:46 logic <> Q var
+R41:41 logic <> P var
+R88:90 Coq.Init.Logic <> not def
