@@ -37,7 +37,7 @@ Proof.
   destruct x.
   unfold Q_eq.
   apply Z_6.
-Qed.
+Defined.
 
 Theorem Q_symm: Symmetric Q_eq.
 Proof.
@@ -48,7 +48,7 @@ Proof.
   symmetry.
   rewrite (Z_6 _ i), (Z_6 i0 _).
   apply H.
-Qed.
+Defined.
 
 Theorem Q_tran: Transitive Q_eq.
 Proof.
@@ -69,7 +69,7 @@ Proof.
   assert (Z_pos__Z rx <Z> Z0) by apply L.
   apply (Z_eq_mult_cons (iy *Z Z_pos__Z rz) (Z_pos__Z ry *Z iz)) in H1.
   rewrite <- H1. apply H0.
-Qed.
+Defined.
 
 Add Parametric Relation:
   rational Q_eq
@@ -114,7 +114,7 @@ Proof. (* well-definedness of Q_plus *)
           (mult_comm x3 (w3 * y3)), <- (mult_assoc x3 z3), <- (mult_assoc x3 (z3 * w2)),
           (mult_comm x3 (z3 * w2 * y3)).
   repeat rewrite mult_assoc. reflexivity.
-Qed.
+Defined.
 
 Notation "p '+' q" := (Q_plus p q) (at level 50, left associativity) : rational_scope.
 Notation "p '+Q' q" := (Q_plus p q) (at level 50, left associativity) : type_scope.
@@ -129,7 +129,7 @@ Add Morphism Q_neg with signature Q_eq ==> Q_eq as Q_neg_morph.
 Proof. (* well-definedness of Q_neg *)
   destruct x as [[x1 x2] [x3 x4]], y as [[y1 y2] [y3 y4]].
   simpl. repeat rewrite mult_0_r. repeat rewrite <- plus_n_O. simpl. intros. omega.
-Qed.
+Defined.
 
 Notation "'-' q" := (Q_neg q) (at level 35, right associativity) : rational_scope.
 Notation "'-Q' q" := (Q_neg q) (at level 35, right associativity) : type_scope.
@@ -141,7 +141,7 @@ Definition Q_minus (p q: rational) := p + -q.
 Add Morphism Q_minus with signature Q_eq ==> Q_eq ==> Q_eq as Q_minus_morph.
 Proof. (* well-definedness of Z_minus *)
   unfold Q_minus. intros. now rewrite H, H0.
-Qed.
+Defined.
 
 Notation "p '-' q" := (Q_minus p q) (at level 50, left associativity) : rational_scope.
 Notation "p '-Q' q" := (Q_minus p q) (at level 50, left associativity) : type_scope.
@@ -184,12 +184,12 @@ Proof.
   - assert (forall n: nat, (n * 1)%nat = n) by (intros; omega).
     repeat rewrite H0 in H. apply H.
   - rewrite H; reflexivity.
-Qed.
+Defined.
 
 Lemma Q_nonzero__iff: forall q: rational, q <Q> 0 <-> Q_numerator q <Z> Z0.
 Proof.
   intros. rewrite Q_zero_iff. reflexivity.
-Qed.
+Defined.
 
 Definition N_sgn_diff__Z (n m: nat): integer :=
   if n <? m then Z1 else if n =? m then Z0 else -Z Z1.
@@ -208,42 +208,41 @@ Proof.
   pose proof (Nat.eq_dec n m) as T. destruct T.
   rewrite <- Nat.eqb_eq in e. rewrite e in Heqc. inversion Heqc.
   intros. apply n0.
-Qed.
+Defined.
 
-Lemma N_abs_diff: forall q1 q2: nat, q1 <> q2 -> 0 < q1 - q2 + (q2 - q1).
+Lemma N_abs_diff: forall q1 q2: nat, q1 <> q2 -> (0 <? q1 - q2 + (q2 - q1)) = true.
 Proof.
-  intros. rewrite N_trichotomy_diff in H. destruct H; omega.
-Qed.
+  intros. rewrite N_trichotomy_ne in H. rewrite N_ltb_true__lt. destruct H; omega.
+Defined.
+
+
 
 (** reciprocal of a rational number: q |-> -q *)
 Definition Q_recip (q: Q_nonzero): Q_nonzero.
   destruct q as [[[q1 q2] [q3 q4]] Hq].
-  simpl in Hq.
-  remember ((q1 - q2) + (q2 - q1))%nat as d.
-  repeat rewrite mult_1_r in Hq; repeat rewrite mult_0_r in Hq; repeat rewrite <- plus_n_O in Hq; simpl in Hq.
   remember (fun x => (0 <? x) = true) as f.
-  assert ((0 <? d) = true).
-  { apply Nat.ltb_lt. rewrite N_trichotomy_diff in Hq. destruct Hq; omega. }
-  remember (exist (fun x => (0 <? x) = true) d H) as m.
+  simpl in Hq; repeat rewrite mult_1_r in Hq; zero_in Hq; simpl in Hq.
+  remember (exist (fun x => (0 <? x) = true) ((q1 - q2) + (q2 - q1))%nat ((N_abs_diff q1 q2) Hq)) as m.
   exists ( ((N_sgn_diff__Z q1 q2) *Z (q3, 0)) // m ).
 
   assert ((q1, q2) <Z> Z0). { simpl. repeat rewrite plus_0_r. apply Hq. }
   rewrite Q_nonzero__iff.
   simpl.
-  rewrite N_trichotomy_diff in Hq.
+  pose proof Hq as H0.
+  rewrite N_trichotomy_ne in H0.
 
   assert (forall z w: integer, z <Z> Z0 /\ w <Z> Z0 -> z *Z w <Z> Z0). {
     intros [z1 z2] [w1 w2]. simpl. repeat rewrite plus_0_r. intros. destruct H1.
-    rewrite N_trichotomy_diff in H1; rewrite N_trichotomy_diff in H2; rewrite N_trichotomy_diff.
+    rewrite N_trichotomy_ne in H1; rewrite N_trichotomy_ne in H2; rewrite N_trichotomy_ne.
     destruct H1, H2.
-    - left. rewrite (plus_comm (z1 * w1)), (plus_comm (z1 * w2)). apply N_rearr.
-      split; [apply H1 | apply H2].
-    - right. rewrite (plus_comm (z1 * w2)), (plus_comm (z1 * w1)). apply N_rearr.
-      split; [apply H1 | apply H2].
-    - right. apply N_rearr.
-      split; [apply H1 | apply H2].
-    - left. apply N_rearr.
-      split; [apply H1 | apply H2].
+    - right. apply N_rearrange.
+      apply H1. apply H2.
+    - left. apply N_rearrange.
+      apply H1. apply H2.
+    - left. rewrite (plus_comm (z1 * w1)), (plus_comm (z1 * w2)). apply N_rearrange.
+      apply H1. apply H2.
+    - right. rewrite (plus_comm (z1 * w2)), (plus_comm (z1 * w1)). apply N_rearrange.
+      apply H1. apply H2.
   }
   apply H1. split.
   assert (forall a b: nat, a > b -> (a <? b) = false /\ (a =? b) = false).
@@ -251,18 +250,18 @@ Definition Q_recip (q: Q_nonzero): Q_nonzero.
   assert (S a > S b -> a > b) by omega. apply H3 in H2.
   apply IHa in H2. destruct H2.
   split. unfold Nat.ltb. unfold Nat.ltb in H2.
-  rewrite N_leb_false_gt. rewrite N_leb_false_gt in H2. omega.
-  rewrite N_beq_false. rewrite N_beq_false in H4. omega.
+  rewrite N_leb_false__gt. rewrite N_leb_false__gt in H2. omega.
+  rewrite N_eqb_false__ne. rewrite N_eqb_false__ne in H4. omega.
   }
 
   unfold N_sgn_diff__Z.
 
   unfold is_true in q4.
   rewrite Nat.ltb_lt in q4.
-  simpl in H0. repeat rewrite <- plus_n_O in H0. destruct Hq.
+  simpl in H0. repeat rewrite <- plus_n_O in H0. destruct H0.
 
-  apply Z_sgn_diff__nonzero. apply H0.
-  apply Z_sgn_diff__nonzero. apply H0.
+  apply Z_sgn_diff__nonzero. apply Hq.
+  apply Z_sgn_diff__nonzero. apply Hq.
   simpl. unfold is_true in q4. rewrite Nat.ltb_lt in q4. omega.
 Defined.
 
@@ -271,45 +270,64 @@ Definition Q_nonzero_eq (p q: Q_nonzero): Prop := (proj1_sig p) =Q= (proj1_sig q
 Add Morphism Q_recip with signature Q_nonzero_eq ==> Q_nonzero_eq as Q_recip_morph.
 Proof. (* well-definedness of Q_recip *)
   destruct x as [[[x1 x2] [x3 x4]] x5], y as [[[y1 y2] [y3 y4]] y5].
-  unfold Q_nonzero_eq. intros. simpl in H. unfold Q_recip. 
-  simpl. unfold N_sgn_diff__Z.
-  simpl in x5, y5.
+  unfold Q_nonzero_eq. intros. simpl in H. unfold Q_recip.
+  simpl. zero_in H. simpl in H. unfold Z_pos__Z. simpl.
+  unfold N_sgn_diff__Z.
+  zero_in x5; zero_in y5.
   assert (mult_1_r: forall n:nat, (n * 1)%nat = n) by (intros; omega).
   repeat rewrite mult_1_r in x5; repeat rewrite mult_0_r, plus_0_r in x5; simpl in x5.
-  intros.
-  repeat rewrite mult_1_r in H; repeat rewrite mult_0_r in H; repeat rewrite plus_0_r in H; simpl in H.
-  assert (y1 <> y2).
-  pose proof y5 as y6.
-  repeat rewrite mult_1_r in y6; repeat rewrite mult_0_r in y6; repeat rewrite plus_0_r in y6; simpl in y6.
-  apply y6.
-  pose proof (N_abs_diff y1 y2) as NDy.
-  apply NDy in H0.
-  rewrite <- Nat.ltb_lt in H0.
-  unfold Z_eq.
-  rewrite H0.
-  
-Qed.
+  repeat rewrite mult_1_r in y5; repeat rewrite mult_0_r, plus_0_r in y5; simpl in y5.
+  rewrite N_trichotomy_ne in x5, y5.
+  destruct x5, y5.
+  - assert (NDx: (x1 - x2)%nat = 0%nat) by omega.
+    assert (NDy: (y1 - y2)%nat = 0%nat) by omega.
+    rewrite <- N_ltb_true__lt in H0, H1.
+    rewrite H0, H1, NDx, NDy; zero; simpl.
+    rewrite (N_cons_eq_plus (x3 * y1 + x1 * y3)).
+    rewrite <- plus_assoc, plus_comm, <- plus_assoc, <- mult_plus_distr_l, N_minus_plus.
+    rewrite <- plus_assoc, <- mult_plus_distr_r, (plus_comm x1 (x2 - x1)%nat), N_minus_plus.
+    omega. rewrite N_ltb_true__lt in H0. omega. rewrite N_ltb_true__lt in H1. omega.
+  - assert (NDx: (x1 - x2)%nat = 0%nat) by omega.
+    assert (NDy: (y2 - y1)%nat = 0%nat) by omega.
+    rewrite <- N_ltb_true__lt in H0.
+    assert (y1 >= y2) by omega.
+    assert (y1 <> y2) by omega.
+    rewrite <- N_ltb_false__ge in H2.
+    rewrite <- N_eqb_false__ne in H3.
+    rewrite H0, H2, H3, NDx, NDy; zero; simpl.
+    rewrite (N_cons_eq_plus (x3 * y2 + x1 * y3)). zero.
+    rewrite (plus_comm (x3 * (y1 - y2))%nat), <- plus_assoc, (plus_assoc (x1 * y3)%nat), (plus_comm (x1 * y3)%nat),
+    <- mult_plus_distr_r, N_minus_plus.
+    rewrite (plus_comm (x2 * y3)%nat), plus_assoc, <- mult_plus_distr_l, (plus_comm y2), N_minus_plus.
+    omega. rewrite N_ltb_true__lt in H0. omega. rewrite N_ltb_true__lt in H0. omega.
+  - assert (NDx: (x2 - x1)%nat = 0%nat) by omega.
+    assert (NDy: (y1 - y2)%nat = 0%nat) by omega. 
+    rewrite <- N_ltb_true__lt in H1.
+    assert (x1 >= x2) by omega.
+    assert (x1 <> x2) by omega.
+    rewrite <- N_ltb_false__ge in H2.
+    rewrite <- N_eqb_false__ne in H3.
+    rewrite H1, H2, H3, NDx, NDy; zero; simpl.
+    rewrite (N_cons_eq_plus (x3 * y1 + x2 * y3)). zero.
+    assert ((x3 * y1 + x2 * y3 + (x3 * (y2 - y1) + (x1 - x2) * y3))%nat = (x3 * (y2 - y1) + x3 * y1 + ((x1 - x2) * y3 + x2 * y3))%nat) by omega.
+    rewrite H4. rewrite <- mult_plus_distr_l, <- mult_plus_distr_r. repeat rewrite N_minus_plus.
+    omega. omega. rewrite N_ltb_true__lt in H1. omega.
+  - assert (NDx: (x2 - x1)%nat = 0%nat) by omega.
+    assert (NDy: (y2 - y1)%nat = 0%nat) by omega.
+    assert (x1 >= x2) by omega.
+    assert (x1 <> x2) by omega.
+    assert (y1 >= y2) by omega.
+    assert (y1 <> y2) by omega.
+    rewrite <- N_ltb_false__ge in H2.
+    rewrite <- N_eqb_false__ne in H3.
+    rewrite <- N_ltb_false__ge in H4.
+    rewrite <- N_eqb_false__ne in H5.
+    rewrite H2, H3, H4, H5, NDx, NDy; zero; simpl.
+    rewrite (N_cons_eq_plus (x2 * y3 + x3 * y2)).
+    rewrite plus_comm, plus_assoc, <- mult_plus_distr_r, N_minus_plus.
+    rewrite <- plus_assoc, <- mult_plus_distr_l, (plus_comm y2), N_minus_plus.
+    omega. omega. omega.
+Defined.
 
 Notation "'/' q" := (Q_neg q) (at level 35, right associativity) : rational_scope.
 Notation "'/Q' q" := (Q_neg q) (at level 35, right associativity) : type_scope.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
