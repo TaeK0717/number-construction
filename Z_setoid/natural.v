@@ -61,7 +61,7 @@ Lemma N_le__zero_minus: forall a b: nat, a <= b <-> a - b = 0.
 Proof. intros; omega. Defined.
 
 Ltac zero := simpl; repeat rewrite <- mult_n_O; repeat rewrite <- plus_n_O; repeat rewrite N_minus_zero; repeat rewrite N_minus_itself; try reflexivity.
-Ltac zero_in H := simpl in H; repeat rewrite <- mult_n_O in H; repeat rewrite <- plus_n_O in H; repeat rewrite N_minus_zero in H; repeat rewrite N_minus_itself in H; try reflexivity; inversion H.
+Ltac zero_in H := simpl in H; repeat rewrite <- mult_n_O in H; repeat rewrite <- plus_n_O in H; repeat rewrite N_minus_zero in H; repeat rewrite N_minus_itself in H; try reflexivity.
 
 (** 4. Consistencies of inequalities *)
 (* Use left operations *)
