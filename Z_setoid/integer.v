@@ -12,6 +12,40 @@ Inductive integer: Type :=
 
 Notation "( x , y )" := (preint x y).
 
+(** natural order for Z *)
+Definition Z_le (x y: integer) := (** x <= y iff *)
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 <= b1 + a2)
+  end
+end.
+
+Lemma Z_le_refl: Reflexive Z_le.
+Proof. unfold Reflexive. intros. destruct x. unfold Z_le. omega. Defined.
+
+Lemma Z_le_tran: Transitive Z_le.
+Proof. unfold Transitive. unfold Z_le. intros. destruct x, y, z. omega. Defined.
+
+(*
+Add Parametric Relation: Z_le with signature Z_eq ==> Z_eq ==> iff as Z_le_morph.
+Proof.
+  destruct x, y, x0, y0.
+  unfold Z_eq in H. unfold Z_eq. unfold iff. unfold Z_le.
+  intros. split; omega.
+Defined.
+*)
+Add Parametric Relation:
+  integer Z_le
+  reflexivity proved by Z_le_refl
+  transitivity proved by Z_le_tran
+  as Z_le_rel.
+
+Notation "z '<=Z' w" := (Z_le z w) (at level 70, no associativity) : type_scope.
+Notation "z '<Z' w" := (~ Z_le w z) (at level 70, no associativity) : type_scope.
+Notation "z '>=Z' w" := (Z_le w z) (at level 70, no associativity) : type_scope.
+Notation "z '>Z' w" := (~ Z_le z w) (at level 70, no associativity) : type_scope.
+
 Definition Z_eq (z w: integer): Prop :=
   match z with
   | (z1, z2) =>
@@ -64,6 +98,17 @@ Add Parametric Relation:
   transitivity proved by Z_tran
   as Z.
 
+Instance Z_eq_le_subrel: subrelation Z_eq Z_le.
+Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
+
+Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => Z_le y x).
+Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
+
+
+Add Parametric Morphism: Z_le with signature Z_eq ++> Z_eq ++> iff as Z_le_compat_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Z_eq in H, H0. unfold Z_le.
+  omega. Defined.
+
 Definition Z_plus (z w: integer) :=
   match z with
   | (z1, z2) =>
@@ -72,29 +117,16 @@ Definition Z_plus (z w: integer) :=
     end
   end.
 
-Add Morphism Z_plus with signature Z_eq ==> Z_eq ==> Z_eq as Z_plus_morph.
+Add Parametric Morphism: Z_plus with signature Z_le ++> Z_le ++> Z_le as Z_le_plus_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Z_le in H, H0. unfold Z_plus, Z_le.
+  omega. Defined.
+
+Add Parametric Morphism: Z_plus with signature Z_eq ==> Z_eq ==> Z_eq as Z_plus_morph.
 Proof. (* well-definedness of Z_plus *)
   destruct x, y, x0, y0. unfold Z_eq. unfold Z_eq in H. simpl. intros. omega. Defined.
 
 Notation "z '+' w" := (Z_plus z w) (at level 50, left associativity) : integer_scope.
 Notation "z '+Z' w" := (Z_plus z w) (at level 50, left associativity) : type_scope.
-
-(** subtraction *)
-
-Definition Z_minus (z w: integer) :=
-  match z with
-  | (z1, z2) =>
-    match w with
-    | (w1, w2) => (z1 + w2, z2 + w1)
-    end
-  end.
-
-Add Morphism Z_minus with signature Z_eq ==> Z_eq ==> Z_eq as Z_minus_morph.
-Proof. (* well-definedness of Z_minus *)
-  destruct x, y, x0, y0. unfold Z_eq. unfold Z_eq in H. simpl. intros. omega. Defined.
-
-Notation "z '-' w" := (Z_minus z w) (at level 50, left associativity) : integer_scope.
-Notation "z '-Z' w" := (Z_minus z w) (at level 50, left associativity) : type_scope.
 
 (** negation of an integer: z |-> -z *)
 Definition Z_neg (z: integer) :=
@@ -102,12 +134,31 @@ match z with
 | (z1, z2) => (z2, z1)
 end.
 
-Add Morphism Z_neg with signature Z_eq ==> Z_eq as Z_neg_morph.
+Add Parametric Morphism: Z_neg with signature Z_le --> Z_le as Z_le_neg_morph.
+  intros. destruct x, y. unfold Z_le in H. unfold Z_neg, Z_le.
+  omega. Defined.
+
+Add Parametric Morphism: Z_neg with signature Z_eq ==> Z_eq as Z_neg_morph.
 Proof. (* well-definedness of Z_neg *)
   destruct x, y. unfold Z_eq. simpl. intros. omega. Defined.
 
 Notation "'-' z" := (Z_neg z) (at level 35, right associativity) : integer_scope.
 Notation "'-Z' z" := (Z_neg z) (at level 35, right associativity) : type_scope.
+
+(** subtraction *)
+
+Definition Z_minus (z w: integer) := z + - w.
+
+Add Parametric Morphism: Z_minus with signature Z_le ++> Z_le --> Z_le as Z_le_minus_morph.
+  intros. destruct x, y, x0, y0. unfold Z_le in H, H0. unfold Z_minus, Z_neg, Z_plus, Z_le.
+  omega. Defined.
+
+Add Parametric Morphism: Z_minus with signature Z_eq ==> Z_eq ==> Z_eq as Z_minus_morph.
+Proof. (* well-definedness of Z_minus *)
+  destruct x, y, x0, y0. unfold Z_minus, Z_eq. unfold Z_minus, Z_eq in H. simpl. intros. omega. Defined.
+
+Notation "z '-' w" := (Z_minus z w) (at level 50, left associativity) : integer_scope.
+Notation "z '-Z' w" := (Z_minus z w) (at level 50, left associativity) : type_scope.
 
 (** multiplication *)
 Definition Z_mult (z w: integer): integer :=
@@ -118,9 +169,8 @@ match z with
   end
 end.
 
-Close Scope integer_scope.
-
-Open Scope integer_scope.
+Notation "z '*' w" := (Z_mult z w) (at level 40, left associativity) : integer_scope.
+Notation "z '*Z' w" := (Z_mult z w) (at level 40, left associativity) : type_scope.
 
 Add Morphism Z_mult with signature Z_eq ==> Z_eq ==> Z_eq as Z_mult_morph.
 Proof. (* well-definedness of Z_mult *)
@@ -149,9 +199,6 @@ Proof. (* well-definedness of Z_mult *)
   apply (N_cons_eq_plus (n2 * n3)) in H3.
   omega.
 Defined.
-
-Notation "z '*' w" := (Z_mult z w) (at level 40, left associativity) : integer_scope.
-Notation "z '*Z' w" := (Z_mult z w) (at level 40, left associativity) : type_scope.
 
 (** zero and one *)
 Notation "'0'" := (0, 0) : integer_scope.
@@ -195,6 +242,9 @@ Theorem Z_8: forall x y z: integer, x * (y + z) =Z= x * y + x * z.
 Proof. destruct x, y, z. simpl.
   repeat rewrite mult_plus_distr_l. repeat rewrite mult_plus_distr_r. repeat rewrite plus_assoc. repeat rewrite mult_assoc. omega. Defined.
 
+(** right distribution law *)
+Corollary Z_8_0: forall x y z: integer, (x + y) * z =Z= x * z + y * z.
+Proof. intros. repeat rewrite (Z_6 _ z). apply Z_8. Defined.
 (** Z is an integral domain *)
 Theorem Z_9: forall x y: integer, x * y =Z= 0 -> x =Z= 0 \/ y =Z= 0.
 Proof. destruct x. remember (beq_nat n n0) as b. destruct b.
@@ -224,34 +274,37 @@ Proof. destruct x. remember (beq_nat n n0) as b. destruct b.
 Defined.
 
 (** natural order for Z *)
-Definition Z_le (x y: integer) := (** x <= y iff *)
+Definition Z_leb (x y: integer): bool :=
 match x with
 | (a1, a2) =>
   match y with
-  | (b1, b2) => (a1 + b2 <= b1 + a2)
+  | (b1, b2) => (a1 + b2 <=? b1 + a2)
   end
 end.
 
-Add Morphism Z_le with signature Z_eq ==> Z_eq ==> iff as Z_le_morph.
-Proof.
-  destruct x, y, x0, y0.
-  unfold Z_eq in H. unfold Z_eq. unfold iff. unfold Z_le.
-  intros. split; omega.
-Defined.
+(** natural order for Z *)
+Definition Z_ltb (x y: integer): bool :=
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 <? b1 + a2)
+  end
+end.
 
-Notation "z '<=Z' w" := (Z_le z w) (at level 70, no associativity) : type_scope.
-Notation "z '<Z' w" := (~ Z_le w z) (at level 70, no associativity) : type_scope.
-Notation "z '>=Z' w" := (Z_le w z) (at level 70, no associativity) : type_scope.
-Notation "z '>Z' w" := (~ Z_le z w) (at level 70, no associativity) : type_scope.
+(** natural order for Z *)
+Definition Z_eqb (x y: integer): bool :=
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 =? b1 + a2)
+  end
+end.
 
-Theorem Z_le_refl: subrelation Z_le Z_le.
-Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. apply H. Defined.
-
-Lemma Z_neg_diff__lt: forall x y: integer, x - y <Z 0 <-> x <Z y.
+Lemma Z_neg_diff__lt: forall x y: integer, x + - y <Z 0 <-> x <Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
-Lemma Z_no_diff__eq: forall x y: integer, x - y =Z= 0 <-> x =Z= y.
+Lemma Z_no_diff__eq: forall x y: integer, x + - y =Z= 0 <-> x =Z= y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
-Lemma Z_pos_diff__gt: forall x y: integer, x - y >Z 0 <-> x >Z y.
+Lemma Z_pos_diff__gt: forall x y: integer, x + - y >Z 0 <-> x >Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
 
 Lemma Z_10_0: forall x: integer,
@@ -323,6 +376,7 @@ Proof.
   assert (y * z - x * z =Z= (y - x) * z).
   { rewrite (Z_6 y z), (Z_6 x z), (Z_6 _ z).
     repeat rewrite <- H0. symmetry. rewrite <- H1. apply Z_8. }
+  unfold Z_minus in H2.
   rewrite H2. apply H.
 Defined.
 
