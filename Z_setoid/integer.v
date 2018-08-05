@@ -356,7 +356,7 @@ Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt
   intros. rewrite <- H0. apply (H (x - y) (y - z)). apply H1. Defined.
 
 (** addition preserves the order *)
-Theorem Z_12: forall x y z: integer, x <Z y -> x + z <Z y + z.
+Theorem Z_12: forall x y z: integer, x <Z y <-> x + z <Z y + z.
 Proof. intros x y z. rewrite <- Z_pos_diff__gt. destruct x, y, z. simpl. omega. Defined.
 
 (** mult by positive number preserves the order *)
