@@ -308,6 +308,20 @@ match x with
   end
 end.
 
+
+Lemma Z_leb_true__le: forall x y: integer, Z_leb x y = true <-> x <=Z y.
+Proof. intros. destruct x, y. simpl. apply N_leb_true__le. Defined.
+Lemma Z_ltb_true__lt: forall x y: integer, Z_ltb x y = true <-> x <Z y.
+Proof. intros. destruct x, y. simpl. rewrite -> N_nle__gt. apply Nat.ltb_lt. Defined.
+(* Lemma Z_eqb_true__eq: forall x y: integer, (x =Z=? y) = true <-> x =Z= y.
+Proof.*)
+Lemma Z_leb_false__gt: forall x y: integer, Z_leb x y = false <-> x >Z y.
+Proof. intros. destruct x, y. simpl. rewrite -> N_nle__gt. rewrite <- N_lt__gt. apply N_leb_false__gt. Defined.
+Lemma Z_ltb_false__ge: forall x y: integer, Z_ltb x y = false <-> x >=Z y.
+Proof. intros. destruct x, y. simpl. apply N_ltb_false__ge. Defined.
+(* Lemma Z_eqb_false__eq: forall x y: integer, (x =Z y) = false <-> x <Z> y.
+Proof. *) 
+
 Lemma Z_neg_diff__lt: forall x y: integer, x - y <Z 0 <-> x <Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
 Lemma Z_no_diff__eq: forall x y: integer, x - y =Z= 0 <-> x =Z= y.
@@ -382,6 +396,13 @@ Proof.
   destruct x, y. unfold Z_le, Z_eq in H, H0; unfold Z_le. omega.
 Defined.
 
+Corollary Z_10_4: forall x y: integer, x <=Z y \/ y <=Z x.
+Proof. intros. pose proof (Z_10_1 x y). rewrite (Z_10_3 x y).
+  destruct H. left. left. apply H.
+  destruct H. left. right. apply H.
+  right. rewrite (Z_10_3 y x). left. apply H.
+Defined.
+
 (** transitivity *)
 Theorem Z_11: forall x y z: integer, x <Z y /\ y <Z z -> x <Z z.
 Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt x z). rewrite <- (Z_neg_diff__lt y z).
@@ -437,6 +458,11 @@ Proof.
 Defined.
 
 Lemma Z_le_inv: forall z w: integer, z <=Z w <-> - z >=Z - w.
+Proof.
+  destruct z, w. simpl. omega.
+Defined.
+
+Lemma Z_lt_inv: forall z w: integer, z <Z w <-> - z >Z - w.
 Proof.
   destruct z, w. simpl. omega.
 Defined.
@@ -505,7 +531,53 @@ Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Defined.
 
 Definition Z_abs (z: integer): integer :=
 match z with
-| (m, n) => if m <? n then (n, m) else z
+| (m, n) => if m <? n then - z else z
 end.
+
+Add Morphism Z_abs with signature Z_eq ==> Z_eq as Z_abs_morph.
+Proof.
+  intros. destruct x as [x1 x2], y as [y1 y2]. simpl.
+  remember (x1 <? x2) as b1; remember (y1 <? y2) as b2; destruct b1; destruct b2;
+  symmetry in Heqb1; symmetry in Heqb2; simpl; intros; unfold Z_eq in H.
+  - easy.
+  - rewrite N_ltb_true__lt in Heqb1; rewrite N_ltb_false__ge in Heqb2.
+    omega.
+  - rewrite N_ltb_true__lt in Heqb2; rewrite N_ltb_false__ge in Heqb1.
+    omega.
+  - easy.
+Defined.
+
+Theorem Z_cons_abs_neg: forall z: integer, Z_abs (-z) =Z= Z_abs z.
+Proof. destruct z. simpl.
+  pose proof (N_trichotomy n n0) as T.
+  destruct T.
+    assert (n0 >= n) by omega.
+    rewrite <- N_ltb_true__lt in H;
+    rewrite <- N_ltb_false__ge in H0.
+    rewrite H, H0. reflexivity.
+  destruct H.
+    rewrite H. reflexivity.
+    assert (n >= n0) by omega.
+    unfold gt in H.
+    rewrite <- N_ltb_true__lt in H;
+    rewrite <- N_ltb_false__ge in H0.
+    rewrite H, H0. reflexivity.
+Defined.
+
+Theorem Z_abs_nonneg: forall z: integer, z >=Z 0 <-> Z_abs z =Z= z.
+Proof. destruct z; split; intro. simpl. rewrite <- Z_ltb_false__ge in H.
+  simpl in H. zero_in H. rewrite H. reflexivity.
+  rewrite Z_le_double_neg_elim. unfold not. intros.
+  assert ((n, n0) <Z Z0). unfold not. apply H0.
+  simpl in H1. rewrite N_nle__gt in H1. zero_in H1. unfold gt in H1.
+  rewrite <- N_ltb_true__lt in H1. simpl in H. rewrite H1 in H.
+  rewrite N_ltb_true__lt in H1. simpl in H. omega.
+Defined.
+
+Theorem Z_abs_nonpos: forall z: integer, z <=Z 0 <-> Z_abs z =Z= - z.
+Proof. intro. assert (--z =Z= z). destruct z. reflexivity.
+  rewrite Z_le_inv. assert (-Z Z0 =Z= Z0) by reflexivity.
+  rewrite H0. rewrite <- Z_cons_abs_neg. apply Z_abs_nonneg.
+Defined.
 
 Close Scope integer_scope.
