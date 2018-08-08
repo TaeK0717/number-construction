@@ -63,6 +63,9 @@ Proof. intros; omega. Defined.
 Ltac zero := simpl; repeat rewrite <- mult_n_O; repeat rewrite <- plus_n_O; repeat rewrite N_minus_zero; repeat rewrite N_minus_itself; try reflexivity.
 Ltac zero_in H := simpl in H; repeat rewrite <- mult_n_O in H; repeat rewrite <- plus_n_O in H; repeat rewrite N_minus_zero in H; repeat rewrite N_minus_itself in H; try reflexivity.
 
+Ltac one:= repeat rewrite mult_1_r.
+Ltac one_in H:= repeat rewrite mult_1_r in H.
+
 (** 4. Consistencies of inequalities *)
 (* Use left operations *)
 Lemma N_plus_minus: forall a b: nat, a + b - b = a.
