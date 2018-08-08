@@ -4,21 +4,49 @@ Require Import Coq.Classes.Morphisms.
 Require Import logic.
 Require Import natural.
 Require Import integer.
-Require Import Z_pos.
+Require Import Z_nonzero.
 
 Delimit Scope rational_scope with rational.
 Open Scope rational_scope.
 
 Inductive rational: Type :=
-| prerat : integer -> Z_pos -> rational.
+| prerat : integer -> Z_nonzero -> rational.
 
 Notation "( x '//' y )" := (prerat x y).
+
+(** natural order for Q *)
+Definition Q_le (p q: rational) := (** p <= q iff *)
+match p with
+| (p1 // p2) =>
+  match q with
+  | (q1 // q2) => (Z_mult p1 (Z_nonzero__Z q2)) <=Z (Z_mult (Z_nonzero__Z p2) q1)
+  end
+end.
+
+Lemma Q_le_refl: Reflexive Q_le.
+Proof. unfold Reflexive. intros. destruct x as [i [z e]]; simpl. rewrite Z_6. apply Z_le_refl. Defined.
+
+Lemma Q_le_tran: Transitive Q_le.
+Proof. unfold Transitive. intros. destruct x as [xi [xz xe]], y as [yi [yz ye]], z as [zi [zz ze]]; simpl in H, H0.
+  unfold Q_le; simpl. rewrite Z_cons_le_mult. omega. Defined.
+
+Add Parametric Relation:
+  integer Z_le
+  reflexivity proved by Z_le_refl
+  transitivity proved by Z_le_tran
+  as Z_le_rel.
+
+Notation "z '<=Z' w" := (Z_le z w) (at level 70, no associativity) : type_scope.
+Notation "z '<Z' w" := (~ Z_le w z) (at level 70, no associativity) : type_scope.
+Notation "z '>=Z' w" := (Z_le w z) (at level 70, no associativity) : type_scope.
+Notation "z '>Z' w" := (~ Z_le z w) (at level 70, no associativity) : type_scope.
+
 
 Definition Q_eq (p q: rational): Prop :=
 match p with
 | (p1 // p2) =>
   match q with
-  | (q1 // q2) => (Z_mult p1 (Z_pos__Z q2)) =Z= (Z_mult (Z_pos__Z p2) q1)
+  | (q1 // q2) => (Z_mult p1 (Z_nonzero__Z q2)) =Z= (Z_mult (Z_nonzero__Z p2) q1)
   end
 end.
 
@@ -26,10 +54,10 @@ Notation "p =Q= q" := (Q_eq p q) (at level 70): type_scope.
 Notation "p <Q> q" := (~ p =Q= q) (at level 70): type_scope.
 
 (** zero and one *)
-Notation "'0'" := (Z0 // ZP1) : rational_scope.
-Notation "'Q0'" := (Z0 // ZP1) : type_scope.
-Notation "'1'" := (Z1 // ZP1) : rational_scope.
-Notation "'Q1'" := (Z1 // ZP1) : type_scope.
+Notation "'0'" := (Z0 // ZN1) : rational_scope.
+Notation "'Q0'" := (Z0 // ZN1) : type_scope.
+Notation "'1'" := (Z1 // ZN1) : rational_scope.
+Notation "'Q1'" := (Z1 // ZN1) : type_scope.
 
 Theorem Q_refl: Reflexive Q_eq.
 Proof.
@@ -57,18 +85,14 @@ Proof.
   destruct x as [ix rx], y as [iy ry], z as [iz rz].
   unfold Q_eq.
   intros.
-  assert (L: forall p: Z_pos, Z_pos__Z p <Z> Z0)
-    by (simpl; destruct p, x; try inversion i; simpl; easy).
-  assert (Z_pos__Z ry <Z> Z0) by apply (L ry).
-  apply (Z_eq_mult_cons (ix *Z Z_pos__Z rz) (Z_pos__Z rx *Z iz)) in H1.
-  rewrite H1; clear H1.
-  repeat rewrite <- Z_5.
-  rewrite (Z_6 _ ix), (Z_6 _ (Z_pos__Z rx)).
-  rewrite H.
-  repeat rewrite Z_5.
-  assert (Z_pos__Z rx <Z> Z0) by apply L.
-  apply (Z_eq_mult_cons (iy *Z Z_pos__Z rz) (Z_pos__Z ry *Z iz)) in H1.
-  rewrite <- H1. apply H0.
+  destruct rx as [rx ex]; destruct ry as [ry ey]; destruct rz as [rz ez]; simpl; simpl in H, H0.
+  rewrite (Z_cons_eq_mult _ _ ry).
+  rewrite (Z_6 rx iz). rewrite <- (Z_5 ry iz rx). rewrite <- H0.
+  rewrite Z_5. rewrite (Z_6 rz rx). repeat rewrite <- Z_5. repeat rewrite (Z_6 _ rz).
+  rewrite <- (Z_eq_mult_cons _ _ rz). now rewrite (Z_6 ry ix), (Z_6 iy rx).
+  unfold is_true in ey.
+  rewrite <- negb_true in ey.
+  simpl in ey. rewrite N_eqb_false__ne in ey. zero_in ey.
 Defined.
 
 Add Parametric Relation:
@@ -254,18 +278,18 @@ Proof.
   intros. apply n0.
 Defined.
 
-Lemma N_abs_diff: forall q1 q2: nat, q1 <> q2 -> (0 <? q1 - q2 + (q2 - q1)) = true.
+Definition N_abs_diff (n m: nat) := ((n - m) + (m - n))%nat.
+
+Lemma N_abs_diff_pos: forall q1 q2: nat, q1 <> q2 -> (0 <? N_abs_diff q1 q2) = true.
 Proof.
-  intros. rewrite N_trichotomy_ne in H. rewrite N_ltb_true__lt. destruct H; omega.
+  intros. unfold N_abs_diff. rewrite N_trichotomy_ne in H. rewrite N_ltb_true__lt. destruct H; omega.
 Defined.
 
 (** reciprocal of a rational number: q |-> -q *)
 Definition Q_recip (q: Q_nonzero): Q_nonzero.
   destruct q as [[[q1 q2] [q3 q4]] Hq].
-  remember (fun x => (0 <? x) = true) as f.
-  simpl in Hq; repeat rewrite mult_1_r in Hq; zero_in Hq; simpl in Hq.
-  remember (exist (fun x => (0 <? x) = true) ((q1 - q2) + (q2 - q1))%nat ((N_abs_diff q1 q2) Hq)) as m.
-  exists ( ((N_sgn_diff__Z q1 q2) *Z (q3, 0)) // m ).
+  zero_in Hq; simpl in Hq; repeat rewrite mult_1_r in Hq.
+  exists ( ((N_sgn_diff__Z q1 q2) *Z (q3, 0)) // (exist (fun x => (0 <? x) = true) (N_abs_diff q1 q2) (N_abs_diff_pos q1 q2 Hq)) ).
 
   assert ((q1, q2) <Z> Z0). { simpl. repeat rewrite plus_0_r. apply Hq. }
   rewrite Q_nonzero__iff.
@@ -312,15 +336,15 @@ Definition Q_nonzero_eq (p q: Q_nonzero): Prop := (proj1_sig p) =Q= (proj1_sig q
 Add Morphism Q_recip with signature Q_nonzero_eq ==> Q_nonzero_eq as Q_recip_morph.
 Proof. (* well-definedness of Q_recip *)
   destruct x as [[[x1 x2] [x3 x4]] x5], y as [[[y1 y2] [y3 y4]] y5].
-  unfold Q_nonzero_eq. intros. simpl in H. unfold Q_recip.
-  simpl. zero_in H. simpl in H. unfold Z_pos__Z. simpl.
+  unfold Q_nonzero_eq. intros. simpl in H.
+  unfold Q_recip; simpl. zero_in H. simpl in H. unfold Z_pos__Z. simpl.
   unfold N_sgn_diff__Z.
   zero_in x5; zero_in y5.
   assert (mult_1_r: forall n:nat, (n * 1)%nat = n) by (intros; omega).
   repeat rewrite mult_1_r in x5; repeat rewrite mult_0_r, plus_0_r in x5; simpl in x5.
   repeat rewrite mult_1_r in y5; repeat rewrite mult_0_r, plus_0_r in y5; simpl in y5.
-  rewrite N_trichotomy_ne in x5, y5.
-  destruct x5, y5.
+  rewrite N_trichotomy_ne in x5, y5. 
+  destruct x5, y5; unfold N_abs_diff.
   - assert (NDx: (x1 - x2)%nat = 0%nat) by omega.
     assert (NDy: (y1 - y2)%nat = 0%nat) by omega.
     rewrite <- N_ltb_true__lt in H0, H1.
@@ -421,6 +445,9 @@ Defined.
 Notation "'/' q" := (Q_recip q) (at level 35, right associativity) : rational_scope.
 Notation "'/Q' q" := (Q_recip q) (at level 35, right associativity) : type_scope.
 
+Notation "p '/' q" := (p * proj1_sig (Q_recip q)) (at level 40, left associativity) : rational_scope.
+Notation "p '/Q' q" := (p * proj1_sig (Q_recip q)) (at level 40, left associativity) : type_scope.
+
 Theorem Q_1: forall p q r: rational, p + q + r =Q= p + (q + r).
 Proof. intros. destruct p, q, r. unfold Q_plus.
   assert (Z_pos_mult (Z_pos_mult z z0) z1 = Z_pos_mult z (Z_pos_mult z0 z1)).
@@ -477,7 +504,8 @@ Ltac one:= repeat rewrite mult_1_r.
 Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (Q_nonzero_1).
 Proof. intros. apply Q_nonzero__Q_injective. simpl. destruct q as [[[q1 q2] [q3 q4]] q5].
   unfold Q_recip. simpl. zero. unfold N_sgn_diff__Z. simpl in q5. zero_in q5. simpl in q5.
-  pose proof (N_trichotomy q1 q2) as H. destruct H.
+  pose proof (N_trichotomy q1 q2) as H. 
+  destruct H.
   - assert ((q1 - q2)%nat = 0%nat) by omega.
     rewrite <- N_ltb_true__lt in H. rewrite H. simpl. zero. simpl. rewrite H0. simpl.
     rewrite <- mult_plus_distr_r. rewrite (mult_comm q2 q3), (mult_comm q1 q3). one.
@@ -717,31 +745,70 @@ Proof. intros x y z. rewrite <- Q_pos_diff__gt. destruct x, y, z. simpl.
   destruct z. simpl. unfold is_true in i2. rewrite N_ltb_true__lt in i2. omega.
 Defined.
 
-Theorem Q_13:
-Theorem Q_14:
+Theorem Q_13: forall p q r: rational, p <Q q -> r >Q 0 -> p * r <Q q * r.
+Proof. intros p q r H H'. destruct p as [np dp], q as [nq dq], r as [nr dr].
+  simpl. unfold Z_pos__Z. repeat rewrite Z_pos_mult_compat.
+  assert (forall a b: nat, (a * b, 0) =Z= (a, 0) *Z (b, 0)) by (intros; simpl; omega).
+  repeat rewrite H0. repeat rewrite Z_5. repeat rewrite (Z_6 nr).
+  repeat rewrite (Z_5 _ _ nr). rewrite <- (Z_5 nq), <- (Z_5 np).
+  apply Z_13.
+  simpl in H. unfold Z_pos__Z in H. apply H.
+  simpl in H'. unfold Z_pos__Z in H'. simpl in H'. rewrite Z_7 in H'.
+  assert (Z0 =Z= Z0 *Z nr) by (destruct nr; simpl; omega).
+  rewrite H1. apply Z_13. simpl. destruct dr. simpl. unfold is_true in i.
+  rewrite N_ltb_true__lt in i. omega. apply H'.
+Defined.
 
+Lemma Q_mult_recip_pos: forall (i: Z_pos) (r: Z_pos), (Z_pos__Z i // r) * (Z_pos__Z r // i) =Q= 1.
+Proof. intros. simpl. one. zero. simpl. rewrite Z_pos_mult_compat. unfold Z_pos__N. rewrite mult_comm. reflexivity.
+Defined.
 
+Lemma Z_pos__Z_pos: forall (i: integer), i >Z Z0 -> exists r: Z_pos, i =Z= Z_pos__Z r.
+Proof. intros. destruct i. simpl in H. zero_in H. rewrite N_nle__gt in H.
+  assert (0%nat < (n - n0)%nat) by omega.
+  rewrite <- N_ltb_true__lt in H0.
+  exists (exist _ (n - n0)%nat H0). simpl. omega.
+Defined.
 
+Lemma Z_neg__neg_Z_pos: forall (i: integer), i <Z Z0 -> exists r: Z_pos, i =Z= -Z Z_pos__Z r.
+Proof. intros. remember (-Z i) as ni. assert (i = -Z ni). rewrite Heqni.
+  destruct i; unfold Z_neg, Z_minus; reflexivity.
+  assert (ni >Z Z0). rewrite Heqni. destruct i. unfold Z_le, Z_neg. unfold Z_le in H. zero. zero_in H. apply H.
+  pose proof ((Z_pos__Z_pos ni) H1) as ZZ. destruct ZZ.
+  exists x. rewrite H0, H2. reflexivity.
+Defined.
 
+Lemma Q_mult_recip: forall (q: Q_nonzero), proj1_sig q / q =Q= 1.
+Proof. intros. destruct q. destruct x.
+  pose proof (Z_10_1 i Z0) as T. destruct T.
+  pose proof (Z_neg__neg_Z_pos i H). destruct H0. rewrite H0. unfold Q_recip. proj1_sig. simpl. simpl. one. zero. simpl. rewrite Z_pos_mult_compat. unfold Z_pos__N. rewrite mult_comm. reflexivity.
+Defined.
 
+Corollary Q_13_1: forall p q r: rational, r >Q 0 -> p <Q q <-> p * r <Q q * r.
+Proof. intro. split. intro. apply Q_13. apply H0. apply H.
+  intro. assert (r <Q> 0).
+  unfold not. intro. rewrite H1 in H. simpl in H. omega.
+  remember (exist (fun r: rational => r <Q> Q0) r H1) as nzr.
+  assert (p * (r / nzr) <Q q * (r / nzr)).
+  rewrite Heqnzr.
+  destruct q, r.
+  unfold Q_recip.
+  rewrite (Q_13 _ _ (proj1_sig (/Q nzr))).
+
+Theorem Q_14: 0 <Q> 1.
+Proof. simpl. easy. Defined.
+
+Theorem Q_15: forall q: rational, - q =Q= (-Z Q_numerator q // Q_denominator q). 
+Proof. intros. destruct q. simpl. destruct i. simpl. zero. simpl. 
+  rewrite plus_comm. rewrite (mult_comm _ n), (mult_comm _ n0). reflexivity.
+Defined.
+
+Definition Q_abs (q: rational): rational := (Z_abs (Q_numerator q) // Q_denominator q). 
 
 Theorem Q_16: forall q: rational, - q =Q= (-Z Q_numerator q // Q_denominator q). 
 Proof. intros. destruct q. simpl. destruct i. simpl. zero. simpl. 
   rewrite plus_comm. rewrite (mult_comm _ n), (mult_comm _ n0). reflexivity.
 Defined.
 
-(* 
-Theorem Q_17: trichotomy *)
 
-
-
-
-
-
-
-
-
-
-
-
-
+Close Scope rational_scope.
