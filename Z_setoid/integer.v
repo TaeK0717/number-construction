@@ -241,6 +241,10 @@ Proof. destruct x. simpl. omega. Defined.
 Theorem Z_7_0: forall x: integer, x * 0 =Z= 0.
 Proof. destruct x. simpl. omega. Defined.
 
+(** zero kills all! *)
+Theorem Z_7_1: forall x: integer, 0 * x =Z= 0.
+Proof. destruct x. simpl. omega. Defined.
+
 (** left distribution law *)
 Theorem Z_8: forall x y z: integer, x * (y + z) =Z= x * y + x * z.
 Proof. destruct x, y, z. simpl.
@@ -489,22 +493,15 @@ Proof.
   right. rewrite H2. rewrite (Z_6 _ z). apply Z_7_0. contradiction.
 Defined.
 
-Theorem Z_13_1: forall x y z: integer, x <=Z y -> z >=Z 0 -> x * z <=Z y * z.
+Theorem Z_13_1: forall x y z: integer, z >Z 0 -> x <=Z y <-> x * z <=Z y * z.
 Proof.
-  intros x y z. rewrite (Z_10_3 x y), (Z_10_3 Z0 z), (Z_10_3 (x * z) (y * z)).
-  intros. destruct H; destruct H0.
-  - left. apply Z_13_0; [apply H0 | apply H].
-  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
-  - right. repeat rewrite (Z_6 _ z). rewrite <- Z_cons_eq_mult. apply H. rewrite Z_10_2. left. apply H0.
-  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
+  intros x y z H. split; rewrite (Z_le_double_neg_elim x y); rewrite (Z_le_double_neg_elim (x * z));
+  apply contrapositive; apply Z_13; apply H.
 Defined.
-
 
 (** Z is not a trivial ring *)
 Theorem Z_14: 0 <Z> 1.
 Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Defined.
-
-
 
 Definition Z_abs (z: integer): integer :=
 match z with
