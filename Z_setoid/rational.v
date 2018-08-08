@@ -445,6 +445,22 @@ Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
   repeat rewrite Z_7. now apply Z_6.
 Defined.
 
+Theorem Q_7_0: forall q: rational, q * 0 =Q= 0.
+Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
+  repeat rewrite Z_7, Z_7_0. reflexivity.
+Defined.
+
+Theorem Q_7_1: forall q: rational, 0 * q =Q= 0.
+Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
+  repeat rewrite Z_7, Z_7_0. destruct q1. reflexivity.
+Defined.
+
+Theorem Q_7_2: forall q: rational, q * - Q1 =Q= -q.
+Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
+  destruct q1, q2. simpl. zero. simpl. one.
+  repeat rewrite (mult_comm n1), (mult_comm n2). omega.
+Defined.
+
 Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (QN1).
 Proof. intros. unfold Q_nonzero_eq. simpl. destruct q as [[q1 [q2 q3]] q4]. simpl.
   repeat rewrite Z_7. now apply Z_6.
@@ -473,6 +489,9 @@ Proof. intros. destruct p as [p1 [p2 p3]], q as [q1 [q2 q3]], r as [r1 [r2 r3]].
 
   rewrite H, H0. reflexivity.
 Defined.
+
+Corollary Q_9_0: forall p q r: rational, (q + r) * p =Q= q * p + r * p.
+Proof. intros. repeat rewrite (Q_6 _ p). apply Q_9. Defined.
 
 Corollary Q_double: forall q: rational, q + q =Q= q * (1 + 1).
 Proof. intros. rewrite Q_9. repeat rewrite Q_7. reflexivity. Defined.
@@ -586,6 +605,15 @@ Proof. (* well-definedness of Z_minus *)
   apply H. apply H2. apply H3. apply H5.
 Defined.
 
+Theorem Q_cons_abs_neg: forall q: rational, Q_abs (-q) =Q= Q_abs q.
+Proof. destruct q. simpl.
+  rewrite Z_cons_abs_neg. apply Z_6.
+Defined.
 
+Theorem Q_abs_nonneg: forall z: rational, z >=Q 0 <-> Q_abs z =Q= z.
+Proof. Admitted.
+
+Theorem Z_abs_nonpos: forall z: rational, z <=Q 0 <-> Q_abs z =Q= - z.
+Proof. Admitted.
 
 Close Scope rational_scope.
