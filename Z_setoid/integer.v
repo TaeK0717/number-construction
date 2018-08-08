@@ -237,6 +237,10 @@ rewrite (mult_comm n1 n), (mult_comm n0 n2), (mult_comm n1 n0), (mult_comm n n2)
 Theorem Z_7: forall x: integer, x * 1 =Z= x.
 Proof. destruct x. simpl. omega. Defined.
 
+(** zero kills all! *)
+Theorem Z_7_0: forall x: integer, x * 0 =Z= 0.
+Proof. destruct x. simpl. omega. Defined.
+
 (** left distribution law *)
 Theorem Z_8: forall x y z: integer, x * (y + z) =Z= x * y + x * z.
 Proof. destruct x, y, z. simpl.
@@ -300,11 +304,11 @@ match x with
   end
 end.
 
-Lemma Z_neg_diff__lt: forall x y: integer, x + - y <Z 0 <-> x <Z y.
+Lemma Z_neg_diff__lt: forall x y: integer, x - y <Z 0 <-> x <Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
-Lemma Z_no_diff__eq: forall x y: integer, x + - y =Z= 0 <-> x =Z= y.
+Lemma Z_no_diff__eq: forall x y: integer, x - y =Z= 0 <-> x =Z= y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
-Lemma Z_pos_diff__gt: forall x y: integer, x + - y >Z 0 <-> x >Z y.
+Lemma Z_pos_diff__gt: forall x y: integer, x - y >Z 0 <-> x >Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
 
 Lemma Z_10_0: forall x: integer,
@@ -346,6 +350,34 @@ Proof.
   - destruct H. destruct H0. right. right. apply H1.
 Defined.
 
+(** trichotomy *)
+Corollary Z_10_2: forall x: integer, x <Z> 0 <-> x >Z 0 \/ x <Z 0.
+Proof.
+  intros; split.
+  pose proof (Z_10 x 0);
+  destruct H; destruct H.
+  - right. apply H.
+  - destruct H. destruct H0. intro. contradiction.
+  - destruct H. destruct H0. left. apply H1.
+  - intros. destruct x. unfold Z_eq. unfold Z_le in H. omega.
+Defined.
+
+Lemma Z_le_double_neg_elim: forall x y: integer, x <=Z y <-> ~~ x <=Z y.
+Proof.
+  destruct x, y. unfold Z_le. omega.
+Defined.
+
+Corollary Z_10_3: forall x y: integer, x <=Z y <-> x <Z y \/ x =Z= y.
+Proof.
+  intros. split; pose proof (Z_10_1 x y); intros.
+  destruct H. left. apply H.
+  destruct H. right. apply H.
+  contradiction.
+  destruct H. destruct x, y. unfold Z_le. unfold Z_le in H. omega.
+  destruct H. apply Z_eq_ge_subrel; symmetry; apply H.
+  destruct x, y. unfold Z_le, Z_eq in H, H0; unfold Z_le. omega.
+Defined.
+
 (** transitivity *)
 Theorem Z_11: forall x y z: integer, x <Z y /\ y <Z z -> x <Z z.
 Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt x z). rewrite <- (Z_neg_diff__lt y z).
@@ -359,30 +391,30 @@ Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt
 Theorem Z_12: forall x y z: integer, x <Z y <-> x + z <Z y + z.
 Proof. intros x y z. rewrite <- Z_pos_diff__gt. destruct x, y, z. simpl. omega. Defined.
 
-(** mult by positive number preserves the order *)
-Theorem Z_13: forall x y z: integer, x <Z y -> z >Z 0 -> x * z <Z y * z.
-Proof.
-  intros x y z. rewrite <- Z_pos_diff__gt. rewrite <- (Z_pos_diff__gt (y * z) _).
-  assert (forall a b: integer, a >Z 0 -> b >Z 0 -> a * b >Z 0).
-  { destruct a, b. simpl. repeat rewrite <- plus_n_O.
-    repeat rewrite N_not_le__gt.
-    rewrite (plus_comm (n * n1) _), (plus_comm (n * n2) _).
-    repeat rewrite N_nle__gt.
-    apply (N_rearrange n0 n n2 n1). }
-  assert (forall v w: integer, v + - w =Z= v - w).
-  { destruct v, w. simpl. omega. }
-  assert (forall v w: integer, v * - w =Z= - (v * w)).
-  { destruct v, w. simpl. omega. }
-  assert (y * z - x * z =Z= (y - x) * z).
-  { rewrite (Z_6 y z), (Z_6 x z), (Z_6 _ z).
-    repeat rewrite <- H0. symmetry. rewrite <- H1. apply Z_8. }
-  unfold Z_minus in H2.
-  rewrite H2. apply H.
+Lemma Z_mult_pos_pos__pos: forall a b: integer, a >Z 0 -> b >Z 0 -> a * b >Z 0.
+Proof. destruct a, b. simpl. repeat rewrite <- plus_n_O.
+  repeat rewrite N_not_le__gt.
+  rewrite (plus_comm (n * n1) _), (plus_comm (n * n2) _).
+  repeat rewrite N_nle__gt.
+  apply (N_rearrange n0 n n2 n1).
 Defined.
 
-(** Z is not a trivial ring *)
-Theorem Z_14: 0 <Z> 1.
-Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Defined.
+Lemma Z_mult_neg: forall v w: integer, - v * w =Z= - (v * w).
+Proof. destruct v, w. simpl. omega. Defined.
+
+Lemma Z_mult_neg_0: forall v w: integer, v * - w =Z= - (v * w).
+Proof. destruct v, w. simpl. omega. Defined.
+
+(** mult by positive number preserves the order *)
+Lemma Z_13_0: forall x y z: integer, z >Z 0 -> x <Z y -> x * z <Z y * z.
+Proof.
+  intros x y z. rewrite <- (Z_pos_diff__gt y x). rewrite <- (Z_pos_diff__gt (y * z) _).
+  assert (y * z - x * z =Z= (y - x) * z).
+  { unfold Z_minus. rewrite <- Z_mult_neg. symmetry. apply Z_8_0. }
+  rewrite H.
+  intros.
+  apply Z_mult_pos_pos__pos; [apply H1 | apply H0].
+Defined.
 
 Lemma Z_not_not_equal: forall z w: integer, z =Z= w <-> ~ z <Z> w.
 Proof.
@@ -395,11 +427,6 @@ Proof.
       + symmetry in Heqb. apply beq_nat_false_iff in Heqb. apply H in Heqb. inversion Heqb.
 Defined.
 
-Lemma Z_mult_0: forall z: integer, z * 0 =Z= 0.
-Proof.
-  destruct z. simpl. omega.
-Defined.
-
 Lemma Z_mult_neg_1: forall z: integer, - z =Z= (0, 1) * z.
 Proof.
   destruct z. simpl. omega.
@@ -410,7 +437,7 @@ Proof.
   destruct z, w. simpl. omega.
 Defined.
 
-Lemma Z_eq_mult_cons: forall a b c: integer, c <Z> 0 -> a =Z= b <-> c * a =Z= c * b.
+Lemma Z_cons_eq_mult: forall a b c: integer, c <Z> 0 -> a =Z= b <-> c * a =Z= c * b.
 Proof.
   intros.
   assert (forall z w: integer, z <Z> w <-> z >Z w \/ z <Z w).
@@ -434,16 +461,54 @@ Proof.
   assert (forall z: integer, - - z =Z= z).
   { destruct z. unfold Z_eq, Z_neg. omega. }
   intros. destruct H. destruct H3.
-  - left. repeat rewrite (Z_6 c _). apply Z_13. auto. apply H.
-  - right. repeat rewrite (Z_6 c _). apply Z_13. auto. apply H.
+  - left. repeat rewrite (Z_6 c _). apply Z_13_0; auto.
+  - right. repeat rewrite (Z_6 c _). apply Z_13_0; auto.
   - remember (- c) as d.
     assert (c =Z= - d). { rewrite Heqd. symmetry. apply H2. }
     rewrite H4 in H. apply H1 in H. rewrite H2 in H.
-    repeat rewrite H4. repeat rewrite (Z_mult_neg_1 d).
-    repeat rewrite Z_5. repeat rewrite <- Z_mult_neg_1.
-    repeat rewrite <- H1. repeat rewrite <- Z_le_inv.
-    destruct H3. right. repeat rewrite (Z_6 d _). apply Z_13. auto. apply H.
-    left. repeat rewrite (Z_6 d _). apply Z_13. auto. apply H.
+    repeat rewrite H4.
+    destruct H3. right. repeat rewrite Z_mult_neg. rewrite Z_le_inv. repeat rewrite H2.
+    repeat rewrite (Z_6 d _). apply Z_13_0; auto.
+    left. repeat rewrite Z_mult_neg. rewrite Z_le_inv. repeat rewrite H2.
+    repeat rewrite (Z_6 d _). apply Z_13_0; auto.
 Defined.
+
+(** mult by positive number preserves the order *)
+Theorem Z_13: forall x y z: integer, z >Z 0 -> x <Z y <-> x * z <Z y * z.
+Proof.
+  intros x y z. rewrite <- (Z_pos_diff__gt y x). rewrite <- (Z_pos_diff__gt (y * z) _).
+  assert (y * z - x * z =Z= (y - x) * z).
+  { unfold Z_minus. rewrite <- Z_mult_neg. symmetry. apply Z_8_0. }
+  rewrite H.
+  intros; split; intro.
+  apply Z_mult_pos_pos__pos; [apply H1 | apply H0].
+  unfold not. intro.
+  assert ((y -Z x) *Z z <=Z Z0).
+  rewrite Z_10_3. rewrite Z_10_3 in H2. destruct H2.
+  left. rewrite <- (Z_7_0 z). rewrite (Z_6 z). apply Z_13_0. apply H0. apply H2.
+  right. rewrite H2. rewrite (Z_6 _ z). apply Z_7_0. contradiction.
+Defined.
+
+Theorem Z_13_1: forall x y z: integer, x <=Z y -> z >=Z 0 -> x * z <=Z y * z.
+Proof.
+  intros x y z. rewrite (Z_10_3 x y), (Z_10_3 Z0 z), (Z_10_3 (x * z) (y * z)).
+  intros. destruct H; destruct H0.
+  - left. apply Z_13_0; [apply H0 | apply H].
+  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
+  - right. repeat rewrite (Z_6 _ z). rewrite <- Z_cons_eq_mult. apply H. rewrite Z_10_2. left. apply H0.
+  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
+Defined.
+
+
+(** Z is not a trivial ring *)
+Theorem Z_14: 0 <Z> 1.
+Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Defined.
+
+
+
+Definition Z_abs (z: integer): integer :=
+match z with
+| (m, n) => if m <? n then (n, m) else z
+end.
 
 Close Scope integer_scope.
