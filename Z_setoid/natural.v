@@ -13,6 +13,12 @@ Lemma N_minus_zero: forall a: nat, a - 0 = a.
 Proof. intros; omega. Defined.
 Lemma N_minus_itself: forall a: nat, a - a = 0.
 Proof. intros; omega. Defined.
+Lemma N_gt_max: forall n a b: nat, n > Init.Nat.max a b -> n > a /\ n > b.
+  induction n. intros. inversion H.
+  destruct a; destruct b; try (intros; simpl; omega); simpl; try omega.
+  assert (forall p q: nat, S p > S q <-> p > q) by (intros; omega).
+  repeat rewrite H. apply IHn.
+Defined.
 
 (** 2. Trichotomy-like *)
 Lemma N_eq_dec: forall a b: nat, a = b \/ a <> b.
