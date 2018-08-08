@@ -516,6 +516,9 @@ Proof. Admitted.
 Lemma Q_pos_diff__gt: forall x y: rational, x - y >Q 0 <-> x >Q y.
 Proof. Admitted.
 
+Theorem Q_cons_lt_plus: forall p q r s: rational, q >Q p -> s >Q r -> q +Q s >Q p +Q r.
+Proof. Admitted.
+
 Lemma Q_10_0: forall x: rational,
     (  x <Q 0 /\ ~ x =Q= 0 /\ ~ x >Q 0) \/
     (~ x <Q 0 /\   x =Q= 0 /\ ~ x >Q 0) \/
@@ -613,7 +616,10 @@ Defined.
 Theorem Q_abs_nonneg: forall z: rational, z >=Q 0 <-> Q_abs z =Q= z.
 Proof. Admitted.
 
-Theorem Z_abs_nonpos: forall z: rational, z <=Q 0 <-> Q_abs z =Q= - z.
+Theorem Q_abs_nonpos: forall z: rational, z <=Q 0 <-> Q_abs z =Q= - z.
+Proof. Admitted.
+
+Theorem Q_triangle_ineq: forall p q : rational, Q_abs p +Q Q_abs q >=Q Q_abs (p +Q q).
 Proof. Admitted.
 
 Close Scope rational_scope.
