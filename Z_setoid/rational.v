@@ -14,6 +14,12 @@ Inductive rational: Type :=
 
 Notation "( x '//' y )" := (prerat x y).
 
+(** zero and one *)
+Notation "'0'" := (Z0 // ZN1) : rational_scope.
+Notation "'Q0'" := (Z0 // ZN1) : type_scope.
+Notation "'1'" := (Z1 // ZN1) : rational_scope.
+Notation "'Q1'" := (Z1 // ZN1) : type_scope.
+
 (** natural order for Q *)
 Definition Q_le (p q: rational) := (** p <= q iff *)
 match p with
@@ -44,7 +50,6 @@ Notation "z '<Q' w" := (~ Q_le w z) (at level 70, no associativity) : type_scope
 Notation "z '>=Q' w" := (Q_le w z) (at level 70, no associativity) : type_scope.
 Notation "z '>Q' w" := (~ Q_le z w) (at level 70, no associativity) : type_scope.
 
-
 Definition Q_eq (p q: rational): Prop :=
 match p with
 | (p1 // p2) =>
@@ -55,12 +60,6 @@ end.
 
 Notation "p =Q= q" := (Q_eq p q) (at level 70): type_scope.
 Notation "p <Q> q" := (~ p =Q= q) (at level 70): type_scope.
-
-(** zero and one *)
-Notation "'0'" := (Z0 // ZN1) : rational_scope.
-Notation "'Q0'" := (Z0 // ZN1) : type_scope.
-Notation "'1'" := (Z1 // ZN1) : rational_scope.
-Notation "'Q1'" := (Z1 // ZN1) : type_scope.
 
 Theorem Q_refl: Reflexive Q_eq.
 Proof.
@@ -109,22 +108,103 @@ Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
   now apply (Z_eq_le_subrel (i *Z Z_nonzero__Z z0) (Z_nonzero__Z z *Z i0) H).
 Defined.
 
-Instance Q_eq_ge_subrel: subrelation Q_eq (fun x y => Q_le y x).
+Instance Q_eq_ge_subrel: subrelation Q_eq (fun x y => x >=Q y).
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
   rewrite (Z_6 _ i), (Z_6 i0). symmetry in H. now apply (Z_eq_le_subrel (Z_nonzero__Z z *Z i0) _ H).
 Defined.
 
-Instance Q_lt_le_subrel: subrelation (fun x y => ~ Q_le y x) Q_le.
+Instance Q_lt_le_subrel: subrelation (fun x y => x <Q y) Q_le.
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. rewrite Z_10_3. left.
   rewrite (Z_6 _ i), (Z_6 i0) in H. apply H.
 Defined.
 
-Instance Q_gt_ge_subrel: subrelation (fun x y => ~ Q_le x y) (fun x y => Q_le y x).
+Instance Q_gt_ge_subrel: subrelation (fun x y => x >Q y) (fun x y => x >=Q y).
 Proof. unfold subrelation. destruct x, y. apply Q_lt_le_subrel. Defined.
 
 Add Parametric Morphism: Q_le with signature Q_eq ++> Q_eq ++> iff as Q_le_compat_morph.
 Proof. intros. destruct x, y, x0, y0. unfold Q_eq in H, H0. unfold Q_le.
 Admitted.
+
+Definition Q_leb (p q: rational): bool := (** p <= q iff *)
+match p with
+| (p1 // p2) =>
+  match q with
+  | (q1 // q2) => Z_leb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  end
+end.
+
+Definition Q_ltb (p q: rational): bool :=
+match p with
+| (p1 // p2) =>
+  match q with
+  | (q1 // q2) => Z_ltb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  end
+end.
+
+Definition Q_eqb (p q: rational): bool :=
+match p with
+| (p1 // p2) =>
+  match q with
+  | (q1 // q2) => Z_eqb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  end
+end.
+
+Notation "z '<=Q?' w" := (Q_leb z w) (at level 70, no associativity) : type_scope.
+Notation "z '<Q?' w" := (Q_ltb z w) (at level 70, no associativity) : type_scope.
+Notation "z '>=Q?' w" := (Q_leb w z) (at level 70, no associativity) : type_scope.
+Notation "z '>Q?' w" := (Q_ltb w z) (at level 70, no associativity) : type_scope.
+Notation "z '=Q=?' w" := (Q_eqb w z) (at level 70, no associativity) : type_scope.
+
+Add Parametric Morphism: Q_leb with signature Q_eq ++> Q_eq ++> eq as Q_leb_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Q_eq in H, H0. unfold Q_leb.
+Admitted.
+
+Add Parametric Morphism: Q_ltb with signature Q_eq ++> Q_eq ++> eq as Q_ltb_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Q_eq in H, H0. unfold Q_ltb.
+Admitted.
+
+Lemma Q_leb_true__le: forall x y: rational, Q_leb x y = true <-> x <=Q y.
+Proof. intros. destruct x, y. simpl. apply Z_leb_true__le. Defined.
+Lemma Q_ltb_true__lt: forall x y: rational, Q_ltb x y = true <-> x <Q y. 
+Proof. intros. destruct x, y. simpl. rewrite (Z_6 i), (Z_6 _ i0). apply Z_ltb_true__lt. Defined.
+Lemma Q_eqb_true__eq: forall x y: rational, (Q_eqb x y) = true <-> x =Q= y.
+Proof. Admitted.
+Lemma Q_leb_false__gt: forall x y: rational, Q_leb x y = false <-> x >Q y.
+Proof. intros. destruct x, y. simpl. apply Z_leb_false__gt. Defined.
+Lemma Q_ltb_false__ge: forall x y: rational, Q_ltb x y = false <-> x >=Q y.
+Proof. intros. destruct x, y. simpl. rewrite (Z_6 _ i0), (Z_6 i). apply Z_ltb_false__ge. Defined.
+Lemma Q_eqb_false__eq: forall x y: rational, (Q_eqb x y) = false <-> x <Q> y.
+Proof. Admitted.
+
+Definition Q_max (z w: rational) :=
+if Q_leb z w then w else z.
+
+Add Parametric Morphism: Q_max with signature Q_eq ==> Q_eq ==> Q_eq as Q_max_morph.
+Proof. intros. unfold Q_max, Q_eq.
+  remember (x0 >=Q? x) as b; destruct b; symmetry in Heqb.
+  rewrite H, H0 in Heqb. rewrite Heqb. destruct x0, y0. apply H0.
+  rewrite H, H0 in Heqb. rewrite Heqb. destruct x, y. apply H.
+Defined.
+
+Fixpoint Q_seq_max (a: nat -> rational) (m: nat) : rational := (* max_{i in 0..m} a i *)
+match m with
+| 0%nat => (a 0%nat)
+| S m' => Q_max (a m) (Q_seq_max a m')
+end.
+
+Add Parametric Morphism: Q_seq_max with signature (fun a => fun b => forall n, a n =Q= b n) ==> eq ==> Q_eq as Q_seq_max_morph.
+Proof. intros. unfold Q_eq. induction y0.
+  simpl. pose proof (H 0%nat) as H0. destruct (x 0%nat), (y 0%nat). apply H0.
+  pose proof (H (S y0)) as H0. simpl. unfold Q_max.
+  remember (Q_seq_max x y0) as m. remember (Q_seq_max y y0) as n.
+  assert (m =Q= n). destruct m, n. apply IHy0.
+  remember (m >=Q? x (S y0)) as b; destruct b.
+  rewrite H1, H0 in Heqb. rewrite <- Heqb. apply H1.
+  rewrite H1, H0 in Heqb. rewrite <- Heqb. apply H0.
+Defined.
+
+Theorem Q_seq_max_ge: forall (a: nat -> rational) (m: nat) (n: nat), n <= m -> (Q_seq_max a m) >=Q a n.
+Proof. Admitted.
 
 Definition Q_plus (p q: rational) :=
   match p with
@@ -461,6 +541,10 @@ Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
   repeat rewrite (mult_comm n1), (mult_comm n2). omega.
 Defined.
 
+Theorem Q_7_3: forall q: rational, - Q1 * q =Q= -q.
+Proof. intros. rewrite Q_6. apply Q_7_2.
+Defined.
+
 Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (QN1).
 Proof. intros. unfold Q_nonzero_eq. simpl. destruct q as [[q1 [q2 q3]] q4]. simpl.
   repeat rewrite Z_7. now apply Z_6.
@@ -492,6 +576,9 @@ Defined.
 
 Corollary Q_9_0: forall p q r: rational, (q + r) * p =Q= q * p + r * p.
 Proof. intros. repeat rewrite (Q_6 _ p). apply Q_9. Defined.
+
+Corollary Q_mult_neg_distr: forall p q: rational, - (p + q) =Q= -p - q.
+Proof. intros. rewrite <- Q_7_3. rewrite Q_9. repeat rewrite Q_7_3. reflexivity. Defined.
 
 Corollary Q_double: forall q: rational, q + q =Q= q * (1 + 1).
 Proof. intros. rewrite Q_9. repeat rewrite Q_7. reflexivity. Defined.
@@ -534,6 +621,10 @@ Proof. Admitted.
 
 (** trichotomy *)
 Corollary Q_10_1: forall x y: rational, x <Q y \/ x =Q= y \/ x >Q y.
+Proof. Admitted.
+
+(** trichotomy *)
+Corollary Q_10_2: forall x: rational, x <Q> 0 <-> x >Q 0 \/ x <Q 0.
 Proof. Admitted.
 
 (** transitivity *)
@@ -608,18 +699,34 @@ Proof. (* well-definedness of Z_minus *)
   apply H. apply H2. apply H3. apply H5.
 Defined.
 
+Theorem Q_abs__nonneg: forall z: rational, Q_abs z >=Q 0.
+Proof. Admitted.
+
 Theorem Q_cons_abs_neg: forall q: rational, Q_abs (-q) =Q= Q_abs q.
 Proof. destruct q. simpl.
   rewrite Z_cons_abs_neg. apply Z_6.
 Defined.
 
-Theorem Q_abs_nonneg: forall z: rational, z >=Q 0 <-> Q_abs z =Q= z.
+Theorem Q_abs_nonneg__same: forall z: rational, z >=Q 0 <-> Q_abs z =Q= z.
 Proof. Admitted.
 
-Theorem Q_abs_nonpos: forall z: rational, z <=Q 0 <-> Q_abs z =Q= - z.
+Theorem Q_abs_nonpos__inv: forall z: rational, z <=Q 0 <-> Q_abs z =Q= - z.
 Proof. Admitted.
 
 Theorem Q_triangle_ineq: forall p q : rational, Q_abs p +Q Q_abs q >=Q Q_abs (p +Q q).
 Proof. Admitted.
+
+Lemma Q_cons_pos_div_QN2: forall epsilon: rational, epsilon >Q Q0 -> epsilon /Q QN2 >Q Q0.
+  destruct epsilon. unfold QN2. simpl. rewrite Z_nonzero_mult_compat. simpl.
+  repeat rewrite Z_7_0. repeat rewrite Z_7. easy.
+Defined.
+
+Lemma Q_double_half: forall epsilon: rational, (epsilon /Q QN2) +Q (epsilon /Q QN2) =Q= epsilon.
+  intros. rewrite Q_double.
+  assert (Q1 +Q Q1 =Q= proj1_sig QN2) by reflexivity.
+  rewrite H; clear H. rewrite Q_5.
+  assert (proj1_sig (/Q QN2) *Q proj1_sig QN2 =Q= Q1) by apply Q_8_0.
+  rewrite H; clear H. apply Q_7.
+Defined.
 
 Close Scope rational_scope.
