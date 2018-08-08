@@ -26,20 +26,17 @@ end.
 Lemma Q_le_refl: Reflexive Q_le.
 Proof. unfold Reflexive. intros. destruct x as [i [z e]]; simpl. rewrite Z_6. apply Z_le_refl. Defined.
 
-(*
 Lemma Q_le_tran: Transitive Q_le.
 Proof. unfold Transitive. intros. destruct x as [xi [xz xe]], y as [yi [yz ye]], z as [zi [zz ze]]; simpl in H, H0.
   unfold Q_le; simpl. rewrite (Z_13_1 _ _ (yi *Z yz)).
   repeat rewrite Z_5. rewrite <- (Z_5 zi), (Z_6 zi yi). rewrite Z_5, <- (Z_5 xz), (Z_6 zi).
   rewrite <- (Z_5 zz). rewrite (Z_6 _ yz). rewrite <- Z_5. rewrite (Z_6 zz).
-
-Defined.
-*)
+Admitted.
 
 Add Parametric Relation:
   rational Q_le
   reflexivity proved by Q_le_refl
-  (* transitivity proved by Q_le_tran *)
+  transitivity proved by Q_le_tran
   as Q_le_rel.
 
 Notation "z '<=Q' w" := (Q_le z w) (at level 70, no associativity) : type_scope.
@@ -109,11 +106,21 @@ Add Parametric Relation:
 
 Instance Q_eq_le_subrel: subrelation Q_eq Q_le.
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
-Admitted.
+  now apply (Z_eq_le_subrel (i *Z Z_nonzero__Z z0) (Z_nonzero__Z z *Z i0) H).
+Defined.
 
-Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => Z_le y x).
+Instance Q_eq_ge_subrel: subrelation Q_eq (fun x y => Q_le y x).
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
-Admitted.
+  rewrite (Z_6 _ i), (Z_6 i0). symmetry in H. now apply (Z_eq_le_subrel (Z_nonzero__Z z *Z i0) _ H).
+Defined.
+
+Instance Q_lt_le_subrel: subrelation (fun x y => ~ Q_le y x) Q_le.
+Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. rewrite Z_10_3. left.
+  rewrite (Z_6 _ i), (Z_6 i0) in H. apply H.
+Defined.
+
+Instance Q_gt_ge_subrel: subrelation (fun x y => ~ Q_le x y) (fun x y => Q_le y x).
+Proof. unfold subrelation. destruct x, y. apply Q_lt_le_subrel. Defined.
 
 Add Parametric Morphism: Q_le with signature Q_eq ++> Q_eq ++> iff as Q_le_compat_morph.
 Proof. intros. destruct x, y, x0, y0. unfold Q_eq in H, H0. unfold Q_le.
@@ -126,6 +133,9 @@ Definition Q_plus (p q: rational) :=
     | (iq // rq) => ((ip *Z Z_nonzero__Z rq +Z iq *Z Z_nonzero__Z rp) // Z_nonzero_mult rp rq)
     end
   end.
+
+Add Parametric Morphism: Q_plus with signature Q_le ++> Q_le ++> Q_le as Q_le_plus_morph.
+Proof. Admitted.
 
 Add Morphism Q_plus with signature Q_eq ==> Q_eq ==> Q_eq as Q_plus_morph.
 Proof. (* well-definedness of Q_plus *)
@@ -169,6 +179,9 @@ Definition Q_neg (q: rational) :=
   | (iq // rq) => (-Z iq // rq)
   end.
 
+Add Parametric Morphism: Q_neg with signature Q_le --> Q_le as Q_le_neg_morph.
+Proof. Admitted.
+
 Add Morphism Q_neg with signature Q_eq ==> Q_eq as Q_neg_morph.
 Proof. (* well-definedness of Q_neg *)
   destruct x as [[x1 x2] [[x3 x4] x5]], y as [[y1 y2] [[y3 y4] y5]].
@@ -181,6 +194,9 @@ Notation "'-Q' q" := (Q_neg q) (at level 35, right associativity) : type_scope.
 (** subtraction *)
 
 Definition Q_minus (p q: rational) := p + -q.
+
+Add Parametric Morphism: Q_minus with signature Q_le ++> Q_le --> Q_le as Q_le_minus_morph.
+Proof. Admitted.
 
 Add Morphism Q_minus with signature Q_eq ==> Q_eq ==> Q_eq as Q_minus_morph.
 Proof. (* well-definedness of Z_minus *)
@@ -253,6 +269,7 @@ Admitted.
 Notation "p '*' q" := (Q_mult p q) (at level 40, left associativity) : rational_scope.
 Notation "p '*Q' q" := (Q_mult p q) (at level 40, left associativity) : type_scope.
 
+(* CAUTION: the following two functions are NOT morphisms! (not well-defined) *)
 Definition Q_numerator (q: rational) :=
   match q with
   | (iq // rq) => iq
@@ -361,9 +378,17 @@ Definition Q_nonzero_mult (p q: Q_nonzero): Q_nonzero.
   contradiction.
 Defined.
 
-Definition Q_nonzero_1: Q_nonzero.
-  exists 1.
-  simpl. easy.
+Definition QN1: Q_nonzero.
+  refine (exist  _ 1 _). easy.
+Defined.
+Definition QN2: Q_nonzero.
+  refine (exist  _ (1 + 1) _). easy.
+Defined.
+Definition QN3: Q_nonzero.
+  refine (exist  _ (1 + 1 + 1) _). easy.
+Defined.
+Definition QN4: Q_nonzero.
+  refine (exist  _ (1 + 1 + 1 + 1) _). easy.
 Defined.
 
 Notation "'/' q" := (Q_recip q) (at level 35, right associativity) : rational_scope.
@@ -420,8 +445,13 @@ Proof. intros. destruct q as [q1 [q2 q3]]. simpl.
   repeat rewrite Z_7. now apply Z_6.
 Defined.
 
-Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (Q_nonzero_1).
+Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (QN1).
 Proof. intros. unfold Q_nonzero_eq. simpl. destruct q as [[q1 [q2 q3]] q4]. simpl.
+  repeat rewrite Z_7. now apply Z_6.
+Defined.
+
+Corollary Q_8_0: forall q: Q_nonzero, proj1_sig (Q_nonzero_mult q (/q)) =Q= 1.
+Proof. intros. simpl. destruct q as [[q1 [q2 q3]] q4]. simpl.
   repeat rewrite Z_7. now apply Z_6.
 Defined.
 
@@ -443,6 +473,9 @@ Proof. intros. destruct p as [p1 [p2 p3]], q as [q1 [q2 q3]], r as [r1 [r2 r3]].
 
   rewrite H, H0. reflexivity.
 Defined.
+
+Corollary Q_double: forall q: rational, q + q =Q= q * (1 + 1).
+Proof. intros. rewrite Q_9. repeat rewrite Q_7. reflexivity. Defined.
 
 Lemma Q_le_iff_nonpos: forall x: rational, x <=Q 0 <-> Q_numerator x <=Z Z0.
 Proof. destruct x as [x1 [x2 x3]]. simpl. rewrite Z_7, Z_7_0. reflexivity.
@@ -495,6 +528,64 @@ Proof. Admitted.
 Corollary Q_13_1: forall p q r: rational, r >Q 0 -> p <Q q <-> p * r <Q q * r.
 Proof. Admitted.
 
-Definition Q_abs (q: rational): rational := (Z_abs (Q_numerator q) // Q_denominator q). 
+Definition Q_abs (q: rational): rational := (Z_abs (Q_numerator q) // Z_nonzero_abs (Q_denominator q)). 
+
+Add Morphism Q_abs with signature Q_eq ==> Q_eq as Q_abs_morph.
+Proof. (* well-definedness of Z_minus *)
+  assert (forall x1 x2 y1 y2: integer, 
+    x2 >Z Z0 -> y2 >Z Z0 -> x1 *Z y2 =Z= x2 *Z y1 -> Z_abs x1 *Z Z_abs y2 =Z= Z_abs x2 *Z Z_abs y1).
+    intros x1 x2 y1 y2 H H0.
+    assert (x2 >=Z Z0). rewrite Z_10_3. left. apply H.
+    assert (y2 >=Z Z0). rewrite Z_10_3. left. apply H0.
+    apply Z_abs_nonneg in H1; apply Z_abs_nonneg in H2.
+    rewrite H1, H2.
+    pose proof (Z_10_4 x1 Z0). destruct H3.
+    (* x1 <=Z Z0 -> y1 <=Z Z0 *)
+    intro. assert (y1 <=Z Z0).
+      assert (y1 >Z Z0 -> False).
+      intro. pose proof ((Z_mult_pos_pos__pos x2 y1) H H5). rewrite <- H4 in H6.
+      pose proof (proj1 (Z_13_1 x1 Z0 y2 H0) H3). rewrite Z_7_1 in H7. contradiction.
+    rewrite Z_le_double_neg_elim. unfold not. now apply H5.
+    apply Z_abs_nonpos in H3; apply Z_abs_nonpos in H5.
+    rewrite H3, H5.
+    rewrite Z_mult_neg. rewrite Z_mult_neg_0. rewrite H4. reflexivity.
+    (* x1 >=Z Z0 -> y1 >=Z Z0 *)
+    intro. assert (y1 >=Z Z0).
+      assert (y1 <Z Z0 -> False).
+      intro. pose proof (proj1 (Z_lt_inv y1 Z0) H5). pose proof ((Z_mult_pos_pos__pos x2 (-Z y1)) H H6).
+      rewrite Z_mult_neg_0 in H7. assert (-Z Z0 =Z= Z0) by reflexivity. rewrite <- H8 in H7.
+      pose proof (proj2 (Z_lt_inv (x2 *Z y1) Z0) H7). rewrite <- H4 in H9.
+      pose proof (proj1 (Z_le_inv Z0 x1) H3). rewrite H8 in H10.
+      pose proof (proj1 (Z_13_1 (-Z x1) Z0 y2 H0) H10). rewrite Z_7_1 in H11. rewrite <- H8 in H11.
+      rewrite Z_mult_neg in H11. rewrite <- Z_le_inv in H11. contradiction.
+    rewrite Z_le_double_neg_elim. unfold not. now apply H5.
+    apply Z_abs_nonneg in H3; apply Z_abs_nonneg in H5.
+    rewrite H3, H5. now apply H4.
+
+  destruct x as [x1 [x2 x3]], y as [y1 [y2 y3]]. simpl.
+  rewrite Z_10_2 in x3, y3. destruct x3, y3.
+  apply H; [apply H0 | apply H1].
+
+  pose proof (proj1 (Z_lt_inv y2 Z0) H1). assert (-Z Z0 =Z= Z0) by reflexivity. rewrite H3 in H2.
+  intro. rewrite <- (Z_cons_abs_neg x1), <- (Z_cons_abs_neg y2).
+  assert (forall x: integer, -Z (-Z x) =Z= x) by (destruct x; reflexivity).
+  rewrite <- H5 in H4. rewrite <- Z_mult_neg in H4. rewrite <- Z_mult_neg_0 in H4.
+  apply H. apply H0. apply H2. apply H4.
+
+  pose proof (proj1 (Z_lt_inv x2 Z0) H0). assert (-Z Z0 =Z= Z0) by reflexivity. rewrite H3 in H2.
+  intro. rewrite <- (Z_cons_abs_neg x2), <- (Z_cons_abs_neg y1).
+  assert (forall x: integer, -Z (-Z x) =Z= x) by (destruct x; reflexivity).
+  rewrite <- (H5 (x2 *Z y1)) in H4. rewrite <- Z_mult_neg in H4. rewrite <- Z_mult_neg_0 in H4.
+  apply H. apply H2. apply H1. apply H4.
+
+  pose proof (proj1 (Z_lt_inv x2 Z0) H0). pose proof (proj1 (Z_lt_inv y2 Z0) H1). 
+  assert (-Z Z0 =Z= Z0) by reflexivity. rewrite H4 in H2, H3.
+  intro. rewrite <- (Z_cons_abs_neg x2), <- (Z_cons_abs_neg y2).
+  assert (forall a b: integer, a =Z= b -> -Z a =Z= -Z b) by (intros; rewrite H6; reflexivity).
+  apply H6 in H5. rewrite <- Z_mult_neg_0 in H5. rewrite <- Z_mult_neg in H5.
+  apply H. apply H2. apply H3. apply H5.
+Defined.
+
+
 
 Close Scope rational_scope.
