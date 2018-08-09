@@ -137,7 +137,7 @@ Proof.
   assert (epsilon /Q QN2 >Q Q0).
     destruct epsilon. unfold QN2. simpl. rewrite Z_nonzero_mult_compat. simpl.
     simpl in H1'. rewrite Z_7 in H1'. rewrite Z_7_0 in H1'.
-    rewrite Z_7_0. repeat rewrite Z_7. apply H1'.
+    rewrite Z_7_0. repeat rewrite Z_7. rewrite <- Z_5. apply Z_cons_pos_double. apply H1'.
 
   pose proof (H (epsilon /Q QN2) H1) as Hx.
   pose proof (H0 (epsilon /Q QN2) H1) as Hy.
@@ -155,15 +155,9 @@ Proof.
     rewrite (Q_2 _ (y n)). assert ((y n) -Q (y n) =Q= Q0) by apply Q_4.
     unfold Q_minus in H7. rewrite H7. rewrite Q_3. reflexivity.
   rewrite H7.
-  assert ((epsilon /Q QN2) +Q (epsilon /Q QN2) =Q= epsilon).
-    rewrite Q_double.
-    assert (Q1 +Q Q1 =Q= proj1_sig QN2) by reflexivity.
-    rewrite H8; clear H8. rewrite Q_5.
-    assert (proj1_sig (/Q QN2) *Q proj1_sig QN2 =Q= Q1) by apply Q_8_0.
-    rewrite H8; clear H8. apply Q_7.
   assert (epsilon >Q Q_abs (x n -Q y n) +Q Q_abs (y n -Q z n))
-    by (rewrite <- H8; apply (Q_cons_lt_plus _ _ _ _ H5 H6)).
-  rewrite Q_triangle_ineq. apply H9.
+    by (rewrite <- Q_double_half; apply (Q_cons_lt_plus _ _ _ _ H5 H6)).
+  rewrite Q_triangle_ineq. apply H8.
 Defined.
 
 Add Parametric Relation:
@@ -205,7 +199,7 @@ Proof. (* well-definedness of R_plus *)
   assert (epsilon /Q QN2 >Q Q0).
     destruct epsilon. unfold QN2. simpl. rewrite Z_nonzero_mult_compat. simpl.
     simpl in H1'. rewrite Z_7 in H1'. rewrite Z_7_0 in H1'.
-    rewrite Z_7_0. repeat rewrite Z_7. apply H1'.
+    rewrite Z_7_0. repeat rewrite Z_7. rewrite <- Z_5. apply Z_cons_pos_double. apply H1'.
 
   pose proof (H (epsilon /Q QN2) H1) as Hx.
   pose proof (H0 (epsilon /Q QN2) H1) as Hy.
@@ -224,16 +218,9 @@ Proof. (* well-definedness of R_plus *)
     reflexivity.
   rewrite H7.
 
-  assert ((epsilon /Q QN2) +Q (epsilon /Q QN2) =Q= epsilon).
-    rewrite Q_double.
-    assert (Q1 +Q Q1 =Q= proj1_sig QN2) by reflexivity.
-    rewrite H8; clear H8. rewrite Q_5.
-    assert (proj1_sig (/Q QN2) *Q proj1_sig QN2 =Q= Q1) by apply Q_8_0.
-    rewrite H8; clear H8. apply Q_7.
-
   assert (epsilon >Q Q_abs (x n -Q y n) +Q Q_abs ((x0 n -Q y0 n)))
-    by (rewrite <- H8; apply (Q_cons_lt_plus _ _ _ _ H5 H6)).
-  rewrite Q_triangle_ineq. apply H9.
+    by (rewrite <- Q_double_half; apply (Q_cons_lt_plus _ _ _ _ H5 H6)).
+  rewrite Q_triangle_ineq. apply H8.
 Defined.
 
 Notation "p '+' q" := (R_plus p q) (at level 50, left associativity) : real_scope.
@@ -292,11 +279,11 @@ Definition R_mult (a b: real): real.
   assert (MBN: MB1 <Q> Q0). rewrite Q_10_2. left. apply bb1. rewrite Q_nonzero__iff in MBN.
   remember (exist (fun q: rational => Q_numerator q <Z> Z0) MA1 MAN) as MA.
   remember (exist (fun q: rational => Q_numerator q <Z> Z0) MB1 MBN) as MB.
-  assert (Hepsa: epsilon /Q Q_nonzero_mult QN2 MA >Q Q0). admit.
-  assert (Hepsb: epsilon /Q Q_nonzero_mult QN2 MB >Q Q0). admit.
+  assert (Hepsa: epsilon /Q Q_nonzero_mult QN2 MB >Q Q0). admit.
+  assert (Hepsb: epsilon /Q Q_nonzero_mult QN2 MA >Q Q0). admit.
 
-  pose proof (ca' (epsilon /Q (Q_nonzero_mult QN2 MA)) Hepsa).
-  pose proof (cb' (epsilon /Q (Q_nonzero_mult QN2 MB)) Hepsb).
+  pose proof (ca' (epsilon /Q (Q_nonzero_mult QN2 MB)) Hepsa).
+  pose proof (cb' (epsilon /Q (Q_nonzero_mult QN2 MA)) Hepsb).
   destruct H as [Na Ha]. destruct H0 as [Nb Hb].
   exists (max Na Nb). intros.
 
@@ -306,8 +293,47 @@ Definition R_mult (a b: real): real.
     rewrite (Q_2 Q0). rewrite Q_3. reflexivity.
   rewrite H1.
   rewrite Q_triangle_ineq.
+  unfold Q_minus. rewrite <- Q_mult_neg_0, <- Q_mult_neg. rewrite <- Q_9_0, <- Q_9.
+  repeat rewrite Q_cons_abs_mult.
 
-  (* TODO: complete the proof. *)
+  apply N_gt_max in H; destruct H as [nNa nNb].
+  apply N_gt_max in H0; destruct H0 as [mNa mNb].
+  pose proof (Ha n m nNa mNa) as Ha'.
+  pose proof (Hb n m nNb mNb) as Hb'.
+
+  (* b and MA *)
+  assert (Q_abs (a n) *Q Q_abs (b n +Q -Q b m) <Q epsilon /Q QN2).
+    assert (MA1 =Q= (proj1_sig QN2 *Q MA1) /Q QN2).
+      rewrite (Q_6 _ MA1). rewrite Q_5. rewrite <- Q_nonzero_mult_compat.
+      rewrite Q_8_0. symmetry. apply Q_7.
+    assert (epsilon /Q QN2 =Q= epsilon /Q Q_nonzero_mult QN2 MA *Q MA1).
+      rewrite H. rewrite Q_5. rewrite <- (Q_5 _ (proj1_sig QN2 *Q MA1)).
+      rewrite (Q_6 _ (proj1_sig QN2 *Q MA1)).
+      assert (proj1_sig MA =Q= MA1). rewrite HeqMA. reflexivity.
+      rewrite <- H0. rewrite <- Q_nonzero_mult_compat.
+      rewrite <- Q_nonzero_mult_compat. rewrite Q_8_0.
+      rewrite (Q_6 Q1). rewrite Q_7. reflexivity.
+    rewrite H0. rewrite (Q_6 _ MA1). apply Q_cons_lt_mult_nonneg_0.
+    apply Q_abs__nonneg. apply Q_abs__nonneg. apply ba1. apply ba2.
+    apply (Hb n m nNb mNb).
+  (* a and MB *)
+  assert (Q_abs (b m) *Q Q_abs (a n +Q -Q a m) <Q epsilon /Q QN2).
+    assert (MB1 =Q= (proj1_sig QN2 *Q MB1) /Q QN2).
+      rewrite (Q_6 _ MB1). rewrite Q_5. rewrite <- Q_nonzero_mult_compat.
+      rewrite Q_8_0. symmetry. apply Q_7.
+    assert (epsilon /Q QN2 =Q= epsilon /Q Q_nonzero_mult QN2 MB *Q MB1).
+      rewrite H0. rewrite Q_5. rewrite <- (Q_5 _ (proj1_sig QN2 *Q MB1)).
+      rewrite (Q_6 _ (proj1_sig QN2 *Q MB1)).
+      assert (proj1_sig MB =Q= MB1). rewrite HeqMB. reflexivity.
+      rewrite <- H2. rewrite <- Q_nonzero_mult_compat.
+      rewrite <- Q_nonzero_mult_compat. rewrite Q_8_0.
+      rewrite (Q_6 Q1). rewrite Q_7. reflexivity.
+    rewrite H2. rewrite (Q_6 _ MB1). apply Q_cons_lt_mult_nonneg_0.
+    apply Q_abs__nonneg. apply Q_abs__nonneg. apply bb1. apply bb2.
+    apply (Ha n m nNa mNa).
+
+  rewrite <- Q_double_half. apply Q_cons_lt_plus. apply H. rewrite (Q_6 _ (Q_abs (b m))). apply H0.
+
 Admitted.
 
 Add Morphism R_mult with signature R_eq ==> R_eq ==> R_eq as R_mult_morph.
@@ -366,18 +392,7 @@ Notation "'/' q" := (R_recip q) (at level 35, right associativity) : real_scope.
 Notation "'/R' q" := (R_recip q) (at level 35, right associativity) : type_scope.
 
 Theorem R_1: forall p q r: real, p + q + r =R= p + (q + r).
-Proof. intros. destruct p, q, r. unfold Q_plus.
-  assert (Z_pos_mult (Z_pos_mult z z0) z1 = Z_pos_mult z (Z_pos_mult z0 z1)).
-  destruct z, z0, z1. apply Z_pos__N_injective. simpl. symmetry. apply mult_assoc.
-  assert ((i *Z Z_pos__Z z0 +Z i0 *Z Z_pos__Z z) *Z Z_pos__Z z1 +Z i1 *Z Z_pos__Z (Z_pos_mult z z0)
-          =Z= i *Z Z_pos__Z (Z_pos_mult z0 z1) +Z (i0 *Z Z_pos__Z z1 +Z i1 *Z Z_pos__Z z0) *Z Z_pos__Z z).
-  repeat rewrite Z_8_0.
-    assert (forall a b: Z_pos, Z_pos__Z (Z_pos_mult a b) =Z= Z_pos__Z a *Z Z_pos__Z b).
-    intros. unfold Z_pos__Z. rewrite Z_pos_mult_compat. unfold Z_mult. zero.
-  repeat rewrite H0. rewrite (Z_6 (Z_pos__Z z)). rewrite (Z_5 i0 (Z_pos__Z z)). rewrite (Z_6 (Z_pos__Z z)).
-  repeat rewrite <- Z_5. rewrite <- Z_1. reflexivity.
-  unfold Q_eq. rewrite H, H0. rewrite (Z_6 (Z_pos__Z (Z_pos_mult z (Z_pos_mult z0 z1)))). reflexivity.
-Defined.
+Proof. Admitted.
 
 
 
@@ -389,93 +404,30 @@ Defined.
 
 
 Theorem Q_2: forall p q: real, p + q =Q= q + p.
-Proof. intros. destruct p, q. unfold Q_plus. unfold Q_eq.
-  unfold Z_pos__Z. rewrite Z_pos_mult_compat. rewrite Z_8, Z_8_0. unfold Z_pos__Z. rewrite Z_pos_mult_compat.
-  rewrite (Z_6 (i *Z (proj1_sig z0, 0))), (Z_6 (i0 *Z (proj1_sig z, 0))).
-  rewrite (mult_comm (Z_pos__N z0)).
-  apply Z_2.
-Defined.
+Proof. Admitted.
 
 Theorem Q_3: forall q: real, q + 0 =Q= q.
-Proof. intros. destruct q. unfold Q_plus. unfold Q_eq. rewrite Z_3. rewrite (Z_6 _ i).
-  unfold Z_pos__Z. rewrite Z_5. rewrite Z_pos_mult_compat. simpl. zero.
-  assert (forall a: nat, (a * 1)%nat = a) by (intros; omega). rewrite H. reflexivity.
-Defined.
+Proof. Admitted.
 
 Theorem Q_4: forall q: real, q + -q =Q= 0.
-Proof. intros. destruct q. unfold Q_neg, Q_plus, Q_eq.
-  assert (forall a b: integer, -Z a *Z b =Z= -Z (a *Z b)).
-  { destruct a, b. simpl. omega. }
-  rewrite H. rewrite Z_4. simpl. zero.
-Defined.
+Proof. Admitted.
 
 Theorem Q_5: forall p q r: real, p * q * r =Q= p * (q * r).
-Proof. intros. destruct p, q, r. unfold Q_mult, Q_eq, Z_pos__Z.
-  repeat rewrite Z_pos_mult_compat. rewrite (Z_5 i i0 i1). rewrite Z_6. rewrite <- mult_assoc. reflexivity.
-Defined.
+Proof. Admitted.
 
 Theorem Q_6: forall p q: real, p * q =Q= q * p.
-Proof. intros. destruct p, q. unfold Q_mult, Q_eq, Z_pos__Z. repeat rewrite Z_pos_mult_compat.
-  rewrite Z_6. rewrite (Z_6 i i0). rewrite mult_comm. reflexivity.
-Defined.
+Proof. Admitted.
 
 Theorem Q_7: forall q: real, q * 1 =Q= q.
-Proof. intros. destruct q. unfold Q_mult, Q_eq, Z_pos__Z. rewrite Z_pos_mult_compat. rewrite Z_7, Z_6.
-  assert ((Z_pos__N z * Z_pos__N ZP1)%nat = Z_pos__N z) by (simpl; omega).
-  rewrite H. reflexivity.
-Defined.
+Proof. Admitted.
 
 Ltac one:= repeat rewrite mult_1_r.
 
 Theorem Q_8: forall q: Q_nonzero, Q_nonzero_eq (Q_nonzero_mult q (/q)) (Q_nonzero_1).
-Proof. intros. apply Q_nonzero__Q_injective. simpl. destruct q as [[[q1 q2] [q3 q4]] q5].
-  unfold Q_recip. simpl. zero. unfold N_sgn_diff__Z. simpl in q5. zero_in q5. simpl in q5.
-  pose proof (N_trichotomy q1 q2) as H. destruct H.
-  - assert ((q1 - q2)%nat = 0%nat) by omega.
-    rewrite <- N_ltb_true__lt in H. rewrite H. simpl. zero. simpl. rewrite H0. simpl.
-    rewrite <- mult_plus_distr_r. rewrite (mult_comm q2 q3), (mult_comm q1 q3). one.
-    rewrite <- mult_plus_distr_l. rewrite (plus_comm q1). rewrite N_minus_plus.
-    reflexivity. rewrite N_ltb_true__lt in H. omega.
-  - destruct H. assert (q1 >= q2) by omega. rewrite <- N_eqb_true__eq in H.
-    rewrite <- N_ltb_false__ge in H0. rewrite H0, H. simpl. zero. one. simpl.
-    rewrite N_eqb_true__eq in H. rewrite H. omega.
-    assert (q1 >= q2) by omega. assert (q1 <> q2) by omega.
-    rewrite <- N_ltb_false__ge in H0. rewrite <- N_eqb_false__ne in H1.
-    rewrite H0, H1. simpl. zero. one. simpl.
-    assert ((q2 - q1)%nat = 0%nat) by omega.
-    rewrite H2. rewrite (mult_comm q2 q3). zero. rewrite <- mult_plus_distr_l.
-    rewrite (plus_comm q2). rewrite N_minus_plus. apply mult_comm. omega.
-Defined.
+Proof. Admitted.
 
 Theorem Q_9: forall p q r: real, p * (q + r) =Q= p * q + p * r.
-Proof. intros. destruct p, q, r.
-  unfold Q_mult, Q_eq, Q_plus, Z_pos__Z. repeat rewrite Z_pos_mult_compat.
-  repeat rewrite Z_8. repeat rewrite Z_8_0.
-  rewrite (Z_6 (i *Z i0)). rewrite <- (Z_5 _ _ (i *Z i0)).
-  assert (forall a b: nat, (a, 0) *Z (b, 0) =Z= ((a * b)%nat, 0)).
-  intros. unfold Z_mult. zero.
-  rewrite (Z_6 _ (i *Z i1 *Z (Z_pos__N z * Z_pos__N z0, 0))).
-  rewrite (Z_5 (i *Z i1)).
-  rewrite <- (Z_5 i i0), (Z_5 (i *Z i0)).
-  rewrite <- (Z_5 i i1), (Z_5 (i *Z i1)).
-  repeat rewrite H.
-  rewrite (Z_6 _ (i *Z i0)).
-  repeat rewrite mult_assoc.
-  unfold Z_pos__N.
-  rewrite (mult_comm (proj1_sig z * proj1_sig z0) (proj1_sig z1)), mult_assoc.
-  rewrite (mult_comm (proj1_sig z * proj1_sig z0 * proj1_sig z) (proj1_sig z0)).
-  repeat rewrite mult_assoc.
-  reflexivity.
-Defined.
-
-(** natural order for Q *)
-Definition Q_le (p q: real) := (** p <= q iff *)
-match p with
-| (ip // rp) =>
-  match q with
-  | (iq // rq) => (ip *Z Z_pos__Z rq <=Z iq *Z Z_pos__Z rp)
-  end
-end.
+Proof. Admitted.
 
 Add Parametric Morphism: Q_le with signature Q_eq ==> Q_eq ==> iff as Q_le_morph.
 Proof.
