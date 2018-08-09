@@ -584,6 +584,9 @@ Proof.
   - easy.
 Defined.
 
+Theorem Z_abs__nonneg: forall z: integer, Z_abs z >=Z 0.
+Proof. Admitted.
+
 Theorem Z_cons_abs_neg: forall z: integer, Z_abs (-z) =Z= Z_abs z.
 Proof. destruct z. simpl.
   pose proof (N_trichotomy n n0) as T.
@@ -601,7 +604,7 @@ Proof. destruct z. simpl.
     rewrite H, H0. reflexivity.
 Defined.
 
-Theorem Z_abs_nonneg: forall z: integer, z >=Z 0 <-> Z_abs z =Z= z.
+Theorem Z_abs_nonneg__same: forall z: integer, z >=Z 0 <-> Z_abs z =Z= z.
 Proof. destruct z; split; intro. simpl. rewrite <- Z_ltb_false__ge in H.
   simpl in H. zero_in H. rewrite H. reflexivity.
   rewrite Z_le_double_neg_elim. unfold not. intros.
@@ -611,10 +614,16 @@ Proof. destruct z; split; intro. simpl. rewrite <- Z_ltb_false__ge in H.
   rewrite N_ltb_true__lt in H1. simpl in H. omega.
 Defined.
 
-Theorem Z_abs_nonpos: forall z: integer, z <=Z 0 <-> Z_abs z =Z= - z.
+Theorem Z_abs_nonpos__inv: forall z: integer, z <=Z 0 <-> Z_abs z =Z= - z.
 Proof. intro. assert (--z =Z= z). destruct z. reflexivity.
   rewrite Z_le_inv. assert (-Z Z0 =Z= Z0) by reflexivity.
-  rewrite H0. rewrite <- Z_cons_abs_neg. apply Z_abs_nonneg.
+  rewrite H0. rewrite <- Z_cons_abs_neg. apply Z_abs_nonneg__same.
 Defined.
+
+Theorem Z_square__nonneg: forall z: integer, z * z >=Z 0.
+Proof. Admitted.
+
+Theorem Z_zero_square: forall z: integer, z * z =Z= 0 <-> z =Z= 0.
+Proof. Admitted.
 
 Close Scope integer_scope.
