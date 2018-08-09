@@ -93,8 +93,14 @@ Add Parametric Relation:
 Instance Z_eq_le_subrel: subrelation Z_eq Z_le.
 Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
 
-Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => Z_le y x).
+Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => x >=Z y).
 Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
+
+Instance Z_lt_le_subrel: subrelation (fun x y => x <Z y) Z_le.
+Proof. unfold subrelation. destruct x, y. simpl. omega. Defined.
+
+Instance Z_gt_ge_subrel: subrelation (fun x y => x >Z y) (fun x y => x >=Z y).
+Proof. unfold subrelation. destruct x, y. simpl. omega. Defined.
 
 Add Parametric Morphism: Z_le with signature Z_eq ++> Z_eq ++> iff as Z_le_compat_morph.
 Proof. intros. destruct x, y, x0, y0. unfold Z_eq in H, H0. unfold Z_le.
