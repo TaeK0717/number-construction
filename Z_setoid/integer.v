@@ -632,4 +632,7 @@ Proof. Admitted.
 Theorem Z_zero_square: forall z: integer, z * z =Z= 0 <-> z =Z= 0.
 Proof. Admitted.
 
+Theorem Z_cons_pos_double: forall z: integer, z >Z 0 -> z * (2, 0) >Z 0.
+Proof. Admitted.
+
 Close Scope integer_scope.
