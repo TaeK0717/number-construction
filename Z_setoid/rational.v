@@ -25,7 +25,7 @@ Definition Q_le (p q: rational) := (** p <= q iff *)
 match p with
 | (p1 // p2) =>
   match q with
-  | (q1 // q2) => (Z_mult p1 (Z_nonzero__Z q2)) <=Z (Z_mult (Z_nonzero__Z p2) q1)
+  | (q1 // q2) => (p1 *Z (Z_nonzero__Z p2) *Z ((Z_nonzero__Z q2) *Z (Z_nonzero__Z q2))) <=Z ((Z_nonzero__Z p2) *Z (Z_nonzero__Z p2) *Z (q1 *Z (Z_nonzero__Z q2)))
   end
 end.
 
@@ -34,10 +34,17 @@ Proof. unfold Reflexive. intros. destruct x as [i [z e]]; simpl. rewrite Z_6. ap
 
 Lemma Q_le_tran: Transitive Q_le.
 Proof. unfold Transitive. intros. destruct x as [xi [xz xe]], y as [yi [yz ye]], z as [zi [zz ze]]; simpl in H, H0.
-  unfold Q_le; simpl. rewrite (Z_13_1 _ _ (yi *Z yz)).
-  repeat rewrite Z_5. rewrite <- (Z_5 zi), (Z_6 zi yi). rewrite Z_5, <- (Z_5 xz), (Z_6 zi).
-  rewrite <- (Z_5 zz). rewrite (Z_6 _ yz). rewrite <- Z_5. rewrite (Z_6 zz).
-Admitted.
+  unfold Q_le; simpl. rewrite (Z_13_1 _ _ (zz *Z zz)) in H. rewrite (Z_5 (xz *Z xz)) in H.
+  rewrite (Z_13_1 _ _ (xz *Z xz)) in H0. rewrite (Z_6 _ (xz *Z xz)) in H0. rewrite H0 in H.
+  rewrite (Z_5 (yz *Z yz)) in H. rewrite (Z_6 (yz *Z yz)) in H. rewrite (Z_6 _ (xz *Z xz)) in H.
+  rewrite (Z_5 (xi *Z xz)) in H. rewrite (Z_6 (yz *Z yz)) in H. rewrite <- Z_5 in H.
+  rewrite <- (Z_13_1 _ _ (yz *Z yz)) in H.
+  apply H.
+
+  pose proof (Z_square__nonneg yz). rewrite Z_10_3 in H1. destruct H1. apply H1. destruct yz. symmetry in H1. rewrite Z_zero_square in H1. contradiction.
+  pose proof (Z_square__nonneg xz). rewrite Z_10_3 in H1. destruct H1. apply H1. destruct xz. symmetry in H1. rewrite Z_zero_square in H1. contradiction.
+  pose proof (Z_square__nonneg zz). rewrite Z_10_3 in H1. destruct H1. apply H1. destruct zz. symmetry in H1. rewrite Z_zero_square in H1. contradiction.
+Defined.
 
 Add Parametric Relation:
   rational Q_le
@@ -92,9 +99,8 @@ Proof.
   rewrite (Z_6 rx iz). rewrite <- (Z_5 ry iz rx). rewrite <- H0.
   rewrite Z_5. rewrite (Z_6 rz rx). repeat rewrite <- Z_5. repeat rewrite (Z_6 _ rz).
   rewrite <- (Z_cons_eq_mult _ _ rz). now rewrite (Z_6 ry ix), (Z_6 iy rx).
-  unfold is_true in ez.
-Admitted.
-(* Defined. *)
+  apply ez. apply ey.
+Defined.
 
 Add Parametric Relation:
   rational Q_eq
@@ -102,6 +108,8 @@ Add Parametric Relation:
   symmetry proved by Q_symm
   transitivity proved by Q_tran
   as Q.
+  
+  (* Proof goes wrong *)
 
 Instance Q_eq_le_subrel: subrelation Q_eq Q_le.
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
@@ -215,6 +223,16 @@ Definition Q_plus (p q: rational) :=
   end.
 
 Add Parametric Morphism: Q_plus with signature Q_le ++> Q_le ++> Q_le as Q_le_plus_morph.
+Proof. Admitted.
+
+Add Parametric Morphism: Q_plus with signature (fun x y => x <Q y) ++> (fun x y => x <Q y) ++> (fun x y => x <Q y) as Q_lt_plus_morph.
+Proof. intros. destruct x as [x1 [x2 x3]], y as [y1 [y2 y3]], x0 as [z1 [z2 z3]], y0 as [w1 [w2 w3]].
+  simpl. simpl in H, H0. rewrite <- Z_pos_diff__gt.
+
+Add Parametric Morphism: Q_plus with signature Q_le ++> (fun x y => x <Q y) ++> (fun x y => x <Q y) as Q_le_lt_plus_morph.
+Proof. Admitted.
+
+Add Parametric Morphism: Q_plus with signature (fun x y => x <Q y) ++> Q_le ++> (fun x y => x <Q y) as Q_lt_le_plus_morph.
 Proof. Admitted.
 
 Add Morphism Q_plus with signature Q_eq ==> Q_eq ==> Q_eq as Q_plus_morph.
@@ -458,6 +476,10 @@ Definition Q_nonzero_mult (p q: Q_nonzero): Q_nonzero.
   contradiction.
 Defined.
 
+Lemma Q_nonzero_mult_compat:
+forall p q: Q_nonzero, proj1_sig (Q_nonzero_mult p q) =Q= proj1_sig p *Q proj1_sig q.
+Proof. now intros [x xnz] [y ynz]. Defined.
+
 Definition QN1: Q_nonzero.
   refine (exist  _ 1 _). easy.
 Defined.
@@ -603,7 +625,19 @@ Proof. Admitted.
 Lemma Q_pos_diff__gt: forall x y: rational, x - y >Q 0 <-> x >Q y.
 Proof. Admitted.
 
-Theorem Q_cons_lt_plus: forall p q r s: rational, q >Q p -> s >Q r -> q +Q s >Q p +Q r.
+Theorem Q_cons_lt_plus: forall p q r s: rational, p <Q q -> r <Q s -> p + r <Q q + s.
+Proof. Admitted.
+
+Theorem Q_cons_le_plus: forall p q r s: rational, p <=Q q -> r <=Q s -> p + r <=Q q + s.
+Proof. Admitted.
+
+Theorem Q_cons_lt_mult_nonneg: forall p q r s: rational, p >=Q 0 -> r >=Q 0 -> p <Q q -> r <Q s -> p * r <Q q * s.
+Proof. Admitted.
+
+Theorem Q_cons_le_mult_nonneg: forall p q r s: rational, p >=Q 0 -> r >=Q 0 -> p <=Q q -> r <=Q s -> p * r <=Q q * s.
+Proof. Admitted.
+
+Theorem Q_cons_lt_mult_nonneg_0: forall p q r s: rational, p >=Q 0 -> r >=Q 0 -> q >Q 0 -> p <=Q q -> r <Q s -> p * r <Q q * s.
 Proof. Admitted.
 
 Lemma Q_10_0: forall x: rational,
@@ -633,6 +667,12 @@ Proof. Admitted.
 
 (** addition preserves the order *)
 Theorem Q_12: forall x y z: rational, x <Q y -> x + z <Q y + z.
+Proof. Admitted.
+
+Lemma Q_mult_neg: forall v w: rational, - v * w =Q= - (v * w).
+Proof. Admitted.
+
+Lemma Q_mult_neg_0: forall v w: rational, v * - w =Q= - (v * w).
 Proof. Admitted.
 
 Theorem Q_13: forall p q r: rational, p <Q q -> r >Q 0 -> p * r <Q q * r.
@@ -706,6 +746,9 @@ Theorem Q_cons_abs_neg: forall q: rational, Q_abs (-q) =Q= Q_abs q.
 Proof. destruct q. simpl.
   rewrite Z_cons_abs_neg. apply Z_6.
 Defined.
+
+Theorem Q_cons_abs_mult: forall z w: rational, Q_abs (z *Q w) =Q= Q_abs z * Q_abs w.
+Proof. Admitted.
 
 Theorem Q_abs_nonneg__same: forall z: rational, z >=Q 0 <-> Q_abs z =Q= z.
 Proof. Admitted.
