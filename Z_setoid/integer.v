@@ -27,14 +27,6 @@ Proof. unfold Reflexive. intros. destruct x. unfold Z_le. omega. Defined.
 Lemma Z_le_tran: Transitive Z_le.
 Proof. unfold Transitive. unfold Z_le. intros. destruct x, y, z. omega. Defined.
 
-(*
-Add Parametric Relation: Z_le with signature Z_eq ==> Z_eq ==> iff as Z_le_morph.
-Proof.
-  destruct x, y, x0, y0.
-  unfold Z_eq in H. unfold Z_eq. unfold iff. unfold Z_le.
-  intros. split; omega.
-Defined.
-*)
 Add Parametric Relation:
   integer Z_le
   reflexivity proved by Z_le_refl
@@ -101,13 +93,105 @@ Add Parametric Relation:
 Instance Z_eq_le_subrel: subrelation Z_eq Z_le.
 Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
 
-Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => Z_le y x).
+Instance Z_eq_ge_subrel: subrelation Z_eq (fun x y => x >=Z y).
 Proof. unfold subrelation. destruct x, y. unfold Z_le. intros. unfold Z_eq in H. omega. Defined.
 
+Instance Z_lt_le_subrel: subrelation (fun x y => x <Z y) Z_le.
+Proof. unfold subrelation. destruct x, y. simpl. omega. Defined.
+
+Instance Z_gt_ge_subrel: subrelation (fun x y => x >Z y) (fun x y => x >=Z y).
+Proof. unfold subrelation. destruct x, y. simpl. omega. Defined.
 
 Add Parametric Morphism: Z_le with signature Z_eq ++> Z_eq ++> iff as Z_le_compat_morph.
 Proof. intros. destruct x, y, x0, y0. unfold Z_eq in H, H0. unfold Z_le.
   omega. Defined.
+
+(** natural order for Z *)
+Definition Z_leb (x y: integer): bool :=
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 <=? b1 + a2)
+  end
+end.
+
+(** natural order for Z *)
+Definition Z_ltb (x y: integer): bool :=
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 <? b1 + a2)
+  end
+end.
+
+(** natural order for Z *)
+Definition Z_eqb (x y: integer): bool :=
+match x with
+| (a1, a2) =>
+  match y with
+  | (b1, b2) => (a1 + b2 =? b1 + a2)
+  end
+end.
+
+Notation "z '<=Z?' w" := (Z_leb z w) (at level 70, no associativity) : type_scope.
+Notation "z '<Z?' w" := (Z_ltb z w) (at level 70, no associativity) : type_scope.
+Notation "z '>=Z?' w" := (Z_leb w z) (at level 70, no associativity) : type_scope.
+Notation "z '>Z?' w" := (Z_ltb w z) (at level 70, no associativity) : type_scope.
+Notation "z '=Z=?' w" := (Z_eqb w z) (at level 70, no associativity) : type_scope.
+
+Lemma Z_leb_true__le: forall x y: integer, x <=Z? y = true <-> x <=Z y.
+Proof. intros. destruct x, y. simpl. apply N_leb_true__le. Defined.
+Lemma Z_ltb_true__lt: forall x y: integer, x <Z? y = true <-> x <Z y.
+Proof. intros. destruct x, y. simpl. rewrite -> N_nle__gt. apply Nat.ltb_lt. Defined.
+Lemma Z_eqb_true__eq: forall x y: integer, x =Z=? y = true <-> x =Z= y.
+Proof. Admitted.
+Lemma Z_leb_false__gt: forall x y: integer, x <=Z? y = false <-> x >Z y.
+Proof. intros. destruct x, y. simpl. rewrite -> N_nle__gt. rewrite <- N_lt__gt. apply N_leb_false__gt. Defined.
+Lemma Z_ltb_false__ge: forall x y: integer, x <Z? y = false <-> x >=Z y.
+Proof. intros. destruct x, y. simpl. apply N_ltb_false__ge. Defined.
+Lemma Z_eqb_false__eq: forall x y: integer, x =Z=? y = false <-> x <Z> y.
+Proof. Admitted.
+
+Add Parametric Morphism: Z_leb with signature Z_eq ++> Z_eq ++> eq as Z_leb_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Z_eq in H, H0. unfold Z_leb.
+  remember (n + n4 <=? n3 + n0) as b; destruct b; symmetry in Heqb; symmetry.
+  rewrite N_leb_true__le; rewrite N_leb_true__le in Heqb; omega.
+  rewrite N_leb_false__gt; rewrite N_leb_false__gt in Heqb; omega.
+Defined.
+
+Add Parametric Morphism: Z_ltb with signature Z_eq ++> Z_eq ++> eq as Z_ltb_morph.
+Proof. intros. destruct x, y, x0, y0. unfold Z_eq in H, H0. unfold Z_ltb.
+  remember (n + n4 <? n3 + n0) as b; destruct b; symmetry in Heqb; symmetry.
+  rewrite N_ltb_true__lt; rewrite N_ltb_true__lt in Heqb; omega.
+  rewrite N_ltb_false__ge; rewrite N_ltb_false__ge in Heqb; omega.
+Defined.
+
+Definition Z_max (z w: integer) :=
+if Z_leb z w then w else z.
+
+Add Parametric Morphism: Z_max with signature Z_eq ==> Z_eq ==> Z_eq as Z_max_morph.
+Proof. intros. unfold Z_max, Z_eq.
+  remember (x0 >=Z? x) as b; destruct b; symmetry in Heqb.
+  rewrite H, H0 in Heqb. rewrite Heqb. destruct x0, y0. apply H0.
+  rewrite H, H0 in Heqb. rewrite Heqb. destruct x, y. apply H.
+Defined.
+
+Fixpoint Z_seq_max (a: nat -> integer) (m: nat) : integer := (* max_{i in 0..m} a i *)
+match m with
+| 0%nat => (a 0%nat)
+| S m' => Z_max (a m) (Z_seq_max a m')
+end.
+
+Add Parametric Morphism: Z_seq_max with signature (fun a => fun b => forall n, a n =Z= b n) ==> eq ==> Z_eq as Z_seq_max_morph.
+Proof. intros. unfold Z_eq. induction y0.
+  simpl. pose proof (H 0) as H0. destruct (x 0), (y 0). apply H0.
+  pose proof (H (S y0)) as H0. simpl. unfold Z_max.
+  remember (Z_seq_max x y0) as m. remember (Z_seq_max y y0) as n.
+  assert (m =Z= n). destruct m, n. apply IHy0.
+  remember (m >=Z? x (S y0)) as b; destruct b.
+  rewrite H1, H0 in Heqb. rewrite <- Heqb. apply H1.
+  rewrite H1, H0 in Heqb. rewrite <- Heqb. apply H0.
+Defined.
 
 Definition Z_plus (z w: integer) :=
   match z with
@@ -241,6 +325,10 @@ Proof. destruct x. simpl. omega. Defined.
 Theorem Z_7_0: forall x: integer, x * 0 =Z= 0.
 Proof. destruct x. simpl. omega. Defined.
 
+(** zero kills all! *)
+Theorem Z_7_1: forall x: integer, 0 * x =Z= 0.
+Proof. destruct x. simpl. omega. Defined.
+
 (** left distribution law *)
 Theorem Z_8: forall x y z: integer, x * (y + z) =Z= x * y + x * z.
 Proof. destruct x, y, z. simpl.
@@ -276,33 +364,6 @@ Proof. destruct x. remember (beq_nat n n0) as b. destruct b.
     apply (H0 n n0). split. rewrite N_trichotomy_ne. right. omega. omega.
     Open Scope integer_scope.
 Defined.
-
-(** natural order for Z *)
-Definition Z_leb (x y: integer): bool :=
-match x with
-| (a1, a2) =>
-  match y with
-  | (b1, b2) => (a1 + b2 <=? b1 + a2)
-  end
-end.
-
-(** natural order for Z *)
-Definition Z_ltb (x y: integer): bool :=
-match x with
-| (a1, a2) =>
-  match y with
-  | (b1, b2) => (a1 + b2 <? b1 + a2)
-  end
-end.
-
-(** natural order for Z *)
-Definition Z_eqb (x y: integer): bool :=
-match x with
-| (a1, a2) =>
-  match y with
-  | (b1, b2) => (a1 + b2 =? b1 + a2)
-  end
-end.
 
 Lemma Z_neg_diff__lt: forall x y: integer, x - y <Z 0 <-> x <Z y.
   Proof. intros. destruct x, y. split; unfold Z_le; simpl; omega. Defined.
@@ -378,6 +439,13 @@ Proof.
   destruct x, y. unfold Z_le, Z_eq in H, H0; unfold Z_le. omega.
 Defined.
 
+Corollary Z_10_4: forall x y: integer, x <=Z y \/ y <=Z x.
+Proof. intros. pose proof (Z_10_1 x y). rewrite (Z_10_3 x y).
+  destruct H. left. left. apply H.
+  destruct H. left. right. apply H.
+  right. rewrite (Z_10_3 y x). left. apply H.
+Defined.
+
 (** transitivity *)
 Theorem Z_11: forall x y z: integer, x <Z y /\ y <Z z -> x <Z z.
 Proof. intros x y z. rewrite <- (Z_neg_diff__lt x y). rewrite <- (Z_neg_diff__lt x z). rewrite <- (Z_neg_diff__lt y z).
@@ -437,6 +505,11 @@ Proof.
   destruct z, w. simpl. omega.
 Defined.
 
+Lemma Z_lt_inv: forall z w: integer, z <Z w <-> - z >Z - w.
+Proof.
+  destruct z, w. simpl. omega.
+Defined.
+
 Lemma Z_cons_eq_mult: forall a b c: integer, c <Z> 0 -> a =Z= b <-> c * a =Z= c * b.
 Proof.
   intros.
@@ -489,26 +562,77 @@ Proof.
   right. rewrite H2. rewrite (Z_6 _ z). apply Z_7_0. contradiction.
 Defined.
 
-Theorem Z_13_1: forall x y z: integer, x <=Z y -> z >=Z 0 -> x * z <=Z y * z.
+Theorem Z_13_1: forall x y z: integer, z >Z 0 -> x <=Z y <-> x * z <=Z y * z.
 Proof.
-  intros x y z. rewrite (Z_10_3 x y), (Z_10_3 Z0 z), (Z_10_3 (x * z) (y * z)).
-  intros. destruct H; destruct H0.
-  - left. apply Z_13_0; [apply H0 | apply H].
-  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
-  - right. repeat rewrite (Z_6 _ z). rewrite <- Z_cons_eq_mult. apply H. rewrite Z_10_2. left. apply H0.
-  - right. rewrite <- H0. repeat rewrite Z_7_0. reflexivity.
+  intros x y z H. split; rewrite (Z_le_double_neg_elim x y); rewrite (Z_le_double_neg_elim (x * z));
+  apply contrapositive; apply Z_13; apply H.
 Defined.
-
 
 (** Z is not a trivial ring *)
 Theorem Z_14: 0 <Z> 1.
 Proof. unfold not. unfold Z_eq. simpl. intros. inversion H. Defined.
 
-
-
 Definition Z_abs (z: integer): integer :=
 match z with
-| (m, n) => if m <? n then (n, m) else z
+| (m, n) => if m <? n then - z else z
 end.
+
+Add Morphism Z_abs with signature Z_eq ==> Z_eq as Z_abs_morph.
+Proof.
+  intros. destruct x as [x1 x2], y as [y1 y2]. simpl.
+  remember (x1 <? x2) as b1; remember (y1 <? y2) as b2; destruct b1; destruct b2;
+  symmetry in Heqb1; symmetry in Heqb2; simpl; intros; unfold Z_eq in H.
+  - easy.
+  - rewrite N_ltb_true__lt in Heqb1; rewrite N_ltb_false__ge in Heqb2.
+    omega.
+  - rewrite N_ltb_true__lt in Heqb2; rewrite N_ltb_false__ge in Heqb1.
+    omega.
+  - easy.
+Defined.
+
+Theorem Z_abs__nonneg: forall z: integer, Z_abs z >=Z 0.
+Proof. Admitted.
+
+Theorem Z_cons_abs_neg: forall z: integer, Z_abs (-z) =Z= Z_abs z.
+Proof. destruct z. simpl.
+  pose proof (N_trichotomy n n0) as T.
+  destruct T.
+    assert (n0 >= n) by omega.
+    rewrite <- N_ltb_true__lt in H;
+    rewrite <- N_ltb_false__ge in H0.
+    rewrite H, H0. reflexivity.
+  destruct H.
+    rewrite H. reflexivity.
+    assert (n >= n0) by omega.
+    unfold gt in H.
+    rewrite <- N_ltb_true__lt in H;
+    rewrite <- N_ltb_false__ge in H0.
+    rewrite H, H0. reflexivity.
+Defined.
+
+Theorem Z_abs_nonneg__same: forall z: integer, z >=Z 0 <-> Z_abs z =Z= z.
+Proof. destruct z; split; intro. simpl. rewrite <- Z_ltb_false__ge in H.
+  simpl in H. zero_in H. rewrite H. reflexivity.
+  rewrite Z_le_double_neg_elim. unfold not. intros.
+  assert ((n, n0) <Z Z0). unfold not. apply H0.
+  simpl in H1. rewrite N_nle__gt in H1. zero_in H1. unfold gt in H1.
+  rewrite <- N_ltb_true__lt in H1. simpl in H. rewrite H1 in H.
+  rewrite N_ltb_true__lt in H1. simpl in H. omega.
+Defined.
+
+Theorem Z_abs_nonpos__inv: forall z: integer, z <=Z 0 <-> Z_abs z =Z= - z.
+Proof. intro. assert (--z =Z= z). destruct z. reflexivity.
+  rewrite Z_le_inv. assert (-Z Z0 =Z= Z0) by reflexivity.
+  rewrite H0. rewrite <- Z_cons_abs_neg. apply Z_abs_nonneg__same.
+Defined.
+
+Theorem Z_square__nonneg: forall z: integer, z * z >=Z 0.
+Proof. Admitted.
+
+Theorem Z_zero_square: forall z: integer, z * z =Z= 0 <-> z =Z= 0.
+Proof. Admitted.
+
+Theorem Z_cons_pos_double: forall z: integer, z >Z 0 -> z * (2, 0) >Z 0.
+Proof. Admitted.
 
 Close Scope integer_scope.
