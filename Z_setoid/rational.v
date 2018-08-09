@@ -108,26 +108,32 @@ Add Parametric Relation:
   symmetry proved by Q_symm
   transitivity proved by Q_tran
   as Q.
-  
-  (* Proof goes wrong *)
 
 Instance Q_eq_le_subrel: subrelation Q_eq Q_le.
 Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
-  now apply (Z_eq_le_subrel (i *Z Z_nonzero__Z z0) (Z_nonzero__Z z *Z i0) H).
+  assert (Z_nonzero__Z z *Z Z_nonzero__Z z *Z (i0 *Z Z_nonzero__Z z0) =Z= 
+    i *Z Z_nonzero__Z z *Z (Z_nonzero__Z z0 *Z Z_nonzero__Z z0)).
+  repeat rewrite Z_5. rewrite (Z_6 (Z_nonzero__Z z) (Z_nonzero__Z z0 *Z Z_nonzero__Z z0)).
+  repeat rewrite <- Z_5. rewrite H. rewrite (Z_5 (Z_nonzero__Z z) i0). rewrite (Z_5 _ (i0 *Z Z_nonzero__Z z0)).
+  rewrite (Z_6 (i0 *Z Z_nonzero__Z z0)). repeat rewrite <- Z_5. reflexivity.
+  rewrite H0. easy.
 Defined.
 
 Instance Q_eq_ge_subrel: subrelation Q_eq (fun x y => x >=Q y).
-Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. unfold Q_eq in H.
-  rewrite (Z_6 _ i), (Z_6 i0). symmetry in H. now apply (Z_eq_le_subrel (Z_nonzero__Z z *Z i0) _ H).
+Proof. unfold subrelation. intros. symmetry in H. rewrite H. easy.
 Defined.
 
 Instance Q_lt_le_subrel: subrelation (fun x y => x <Q y) Q_le.
-Proof. unfold subrelation. destruct x, y. unfold Q_le. intros. rewrite Z_10_3. left.
-  rewrite (Z_6 _ i), (Z_6 i0) in H. apply H.
+Proof. unfold subrelation. destruct x, y. unfold Q_le. intros.
+  rewrite (Z_6 (i0 *Z Z_nonzero__Z z0)) in H. rewrite (Z_6 _ (i *Z Z_nonzero__Z z)) in H.
+  apply Z_lt_le_subrel. apply H.
 Defined.
 
 Instance Q_gt_ge_subrel: subrelation (fun x y => x >Q y) (fun x y => x >=Q y).
-Proof. unfold subrelation. destruct x, y. apply Q_lt_le_subrel. Defined.
+Proof. unfold subrelation. destruct x, y. unfold Q_le. intros.
+  rewrite (Z_6 (i0 *Z Z_nonzero__Z z0)). rewrite (Z_6 _ (i *Z Z_nonzero__Z z)).
+  apply Z_lt_le_subrel. apply H.
+Defined.
 
 Add Parametric Morphism: Q_le with signature Q_eq ++> Q_eq ++> iff as Q_le_compat_morph.
 Proof. intros. destruct x, y, x0, y0. unfold Q_eq in H, H0. unfold Q_le.
@@ -137,7 +143,7 @@ Definition Q_leb (p q: rational): bool := (** p <= q iff *)
 match p with
 | (p1 // p2) =>
   match q with
-  | (q1 // q2) => Z_leb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  | (q1 // q2) => (p1 *Z (Z_nonzero__Z p2) *Z ((Z_nonzero__Z q2) *Z (Z_nonzero__Z q2))) <=Z? ((Z_nonzero__Z p2) *Z (Z_nonzero__Z p2) *Z (q1 *Z (Z_nonzero__Z q2)))
   end
 end.
 
@@ -145,7 +151,7 @@ Definition Q_ltb (p q: rational): bool :=
 match p with
 | (p1 // p2) =>
   match q with
-  | (q1 // q2) => Z_ltb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  | (q1 // q2) => (p1 *Z (Z_nonzero__Z p2) *Z ((Z_nonzero__Z q2) *Z (Z_nonzero__Z q2))) <Z? ((Z_nonzero__Z p2) *Z (Z_nonzero__Z p2) *Z (q1 *Z (Z_nonzero__Z q2)))
   end
 end.
 
@@ -153,7 +159,7 @@ Definition Q_eqb (p q: rational): bool :=
 match p with
 | (p1 // p2) =>
   match q with
-  | (q1 // q2) => Z_eqb (Z_mult p1 (Z_nonzero__Z q2)) (Z_mult (Z_nonzero__Z p2) q1)
+  | (q1 // q2) => (Z_mult p1 (Z_nonzero__Z q2)) =Z=? (Z_mult (Z_nonzero__Z p2) q1)
   end
 end.
 
@@ -174,13 +180,13 @@ Admitted.
 Lemma Q_leb_true__le: forall x y: rational, Q_leb x y = true <-> x <=Q y.
 Proof. intros. destruct x, y. simpl. apply Z_leb_true__le. Defined.
 Lemma Q_ltb_true__lt: forall x y: rational, Q_ltb x y = true <-> x <Q y. 
-Proof. intros. destruct x, y. simpl. rewrite (Z_6 i), (Z_6 _ i0). apply Z_ltb_true__lt. Defined.
+Proof. intros. destruct x, y. simpl. rewrite (Z_6 (i0 *Z Z_nonzero__Z z0)), (Z_6 (i *Z Z_nonzero__Z z)). apply Z_ltb_true__lt. Defined.
 Lemma Q_eqb_true__eq: forall x y: rational, (Q_eqb x y) = true <-> x =Q= y.
 Proof. Admitted.
 Lemma Q_leb_false__gt: forall x y: rational, Q_leb x y = false <-> x >Q y.
 Proof. intros. destruct x, y. simpl. apply Z_leb_false__gt. Defined.
 Lemma Q_ltb_false__ge: forall x y: rational, Q_ltb x y = false <-> x >=Q y.
-Proof. intros. destruct x, y. simpl. rewrite (Z_6 _ i0), (Z_6 i). apply Z_ltb_false__ge. Defined.
+Proof. intros. destruct x, y. simpl. rewrite (Z_6 (i0 *Z Z_nonzero__Z z0)), (Z_6 (i *Z Z_nonzero__Z z)). apply Z_ltb_false__ge. Defined.
 Lemma Q_eqb_false__eq: forall x y: rational, (Q_eqb x y) = false <-> x <Q> y.
 Proof. Admitted.
 
@@ -228,6 +234,7 @@ Proof. Admitted.
 Add Parametric Morphism: Q_plus with signature (fun x y => x <Q y) ++> (fun x y => x <Q y) ++> (fun x y => x <Q y) as Q_lt_plus_morph.
 Proof. intros. destruct x as [x1 [x2 x3]], y as [y1 [y2 y3]], x0 as [z1 [z2 z3]], y0 as [w1 [w2 w3]].
   simpl. simpl in H, H0. rewrite <- Z_pos_diff__gt.
+Admitted.
 
 Add Parametric Morphism: Q_plus with signature Q_le ++> (fun x y => x <Q y) ++> (fun x y => x <Q y) as Q_le_lt_plus_morph.
 Proof. Admitted.
@@ -605,11 +612,11 @@ Proof. intros. rewrite <- Q_7_3. rewrite Q_9. repeat rewrite Q_7_3. reflexivity.
 Corollary Q_double: forall q: rational, q + q =Q= q * (1 + 1).
 Proof. intros. rewrite Q_9. repeat rewrite Q_7. reflexivity. Defined.
 
-Lemma Q_le_iff_nonpos: forall x: rational, x <=Q 0 <-> Q_numerator x <=Z Z0.
+Lemma Q_le_iff_nonpos: forall x: rational, x <=Q 0 <-> Q_numerator x *Z Z_nonzero__Z (Q_denominator x) <=Z Z0.
 Proof. destruct x as [x1 [x2 x3]]. simpl. rewrite Z_7, Z_7_0. reflexivity.
 Defined.
 
-Lemma Q_le_iff_nonneg: forall x: rational, x >=Q 0 <-> Q_numerator x >=Z Z0.
+Lemma Q_le_iff_nonneg: forall x: rational, x >=Q 0 <-> Q_numerator x *Z Z_nonzero__Z (Q_denominator x) >=Z Z0.
 Proof. destruct x as [[x11 x12] [[x21 x22] x3]]. simpl. zero. Defined.
 
 Lemma Q_eq_iff: forall x: rational, x =Q= 0 <-> Q_numerator x =Z= Z0.
@@ -690,7 +697,7 @@ Proof. (* well-definedness of Z_minus *)
     intros x1 x2 y1 y2 H H0.
     assert (x2 >=Z Z0). rewrite Z_10_3. left. apply H.
     assert (y2 >=Z Z0). rewrite Z_10_3. left. apply H0.
-    apply Z_abs_nonneg in H1; apply Z_abs_nonneg in H2.
+    apply Z_abs_nonneg__same in H1; apply Z_abs_nonneg__same in H2.
     rewrite H1, H2.
     pose proof (Z_10_4 x1 Z0). destruct H3.
     (* x1 <=Z Z0 -> y1 <=Z Z0 *)
@@ -699,7 +706,7 @@ Proof. (* well-definedness of Z_minus *)
       intro. pose proof ((Z_mult_pos_pos__pos x2 y1) H H5). rewrite <- H4 in H6.
       pose proof (proj1 (Z_13_1 x1 Z0 y2 H0) H3). rewrite Z_7_1 in H7. contradiction.
     rewrite Z_le_double_neg_elim. unfold not. now apply H5.
-    apply Z_abs_nonpos in H3; apply Z_abs_nonpos in H5.
+    apply Z_abs_nonpos__inv in H3; apply Z_abs_nonpos__inv in H5.
     rewrite H3, H5.
     rewrite Z_mult_neg. rewrite Z_mult_neg_0. rewrite H4. reflexivity.
     (* x1 >=Z Z0 -> y1 >=Z Z0 *)
@@ -712,7 +719,7 @@ Proof. (* well-definedness of Z_minus *)
       pose proof (proj1 (Z_13_1 (-Z x1) Z0 y2 H0) H10). rewrite Z_7_1 in H11. rewrite <- H8 in H11.
       rewrite Z_mult_neg in H11. rewrite <- Z_le_inv in H11. contradiction.
     rewrite Z_le_double_neg_elim. unfold not. now apply H5.
-    apply Z_abs_nonneg in H3; apply Z_abs_nonneg in H5.
+    apply Z_abs_nonneg__same in H3; apply Z_abs_nonneg__same in H5.
     rewrite H3, H5. now apply H4.
 
   destruct x as [x1 [x2 x3]], y as [y1 [y2 y3]]. simpl.
@@ -761,7 +768,10 @@ Proof. Admitted.
 
 Lemma Q_cons_pos_div_QN2: forall epsilon: rational, epsilon >Q Q0 -> epsilon /Q QN2 >Q Q0.
   destruct epsilon. unfold QN2. simpl. rewrite Z_nonzero_mult_compat. simpl.
-  repeat rewrite Z_7_0. repeat rewrite Z_7. easy.
+  repeat rewrite Z_7_0. repeat rewrite Z_7. rewrite <- Z_5.
+  assert (i *Z Z_nonzero__Z z *Z (2, 0) =Z= i *Z Z_nonzero__Z z +Z i *Z Z_nonzero__Z z).
+    assert ((2, 0) =Z= Z1 +Z Z1) by reflexivity. rewrite H.
+  rewrite Z_8. repeat rewrite Z_7. easy. rewrite H. destruct (i *Z Z_nonzero__Z z). simpl. omega.
 Defined.
 
 Lemma Q_double_half: forall epsilon: rational, (epsilon /Q QN2) +Q (epsilon /Q QN2) =Q= epsilon.
